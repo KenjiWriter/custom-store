@@ -61,6 +61,9 @@ npm run dev
 
 # 8. Serve locally
 php artisan serve
+```
+
+
 
 Visit http://127.0.0.1:8000 and explore the custom store!
 
