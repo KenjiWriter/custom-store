@@ -4,6 +4,7 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/product-show.css') }}">
+<link rel="stylesheet" href="{{ asset('css/image-gallery-modal.css') }}">
 @endpush
 
 @section('content')
@@ -26,23 +27,23 @@
                     <img id="mainImage" 
                          src="{{ asset('storage/' . $product->images->first()->image_path) }}" 
                          alt="{{ $product->images->first()->alt_text ?? $product->name }}"
-                         onclick="openImageModal(this.src, '{{ $product->images->first()->alt_text ?? $product->name }}')">
+                         onclick="openProductImageModal({{ $product->id }}, '{{ addslashes($product->name) }}', '{{ $product->formatted_price }}', '{{ route('products.show', $product->id) }}')">
                     <div class="zoom-hint">🔍 Kliknij aby powiększyć</div>
                 </div>
 
                 <!-- Miniaturki -->
                 @if($product->images->count() > 1)
                 <div class="thumbnails">
-                    <button class="nav-btn prev-btn" onclick="previousImage()">‹</button>
+                    <button class="nav-btn prev-btn">‹</button>
                     <div class="thumbnails-container">
                         @foreach($product->images as $index => $image)
                             <img class="thumbnail {{ $index === 0 ? 'active' : '' }}" 
                                  src="{{ asset('storage/' . $image->image_path) }}" 
                                  alt="{{ $image->alt_text ?? $product->name }}"
-                                 onclick="changeMainImage('{{ asset('storage/' . $image->image_path) }}', '{{ $image->alt_text ?? $product->name }}', {{ $index }})">
+                                 data-index="{{ $index }}">
                         @endforeach
                     </div>
-                    <button class="nav-btn next-btn" onclick="nextImage()">›</button>
+                    <button class="nav-btn next-btn">›</button>
                 </div>
                 @endif
             @else
@@ -86,10 +87,10 @@
             <!-- Przyciski akcji -->
             <div class="product-actions">
                 @if($product->isInStock())
-                    <button class="btn-add-to-cart">
+                    <button class="btn-add-to-cart" onclick="addToCart({{ $product->id }})">
                         🛒 Dodaj do koszyka
                     </button>
-                    <button class="btn-buy-now">
+                    <button class="btn-buy-now" onclick="buyNow({{ $product->id }})">
                         ⚡ Kup teraz
                     </button>
                 @else
@@ -97,7 +98,7 @@
                         🔔 Powiadom o dostępności
                     </button>
                 @endif
-                <button class="btn-wishlist">
+                <button class="btn-wishlist" onclick="toggleWishlist({{ $product->id }})">
                     ❤️ Dodaj do ulubionych
                 </button>
             </div>
@@ -105,7 +106,7 @@
     </div>
 
     <!-- Produkty powiązane -->
-    @if($relatedProducts->count() > 0)
+    @if(isset($relatedProducts) && $relatedProducts->count() > 0)
     <div class="related-products">
         <h2>Podobne produkty</h2>
         <div class="related-grid">
@@ -131,85 +132,166 @@
     @endif
 </div>
 
-<!-- Modal do powiększania zdjęć -->
-<div id="imageModal" class="image-modal" onclick="closeImageModal()">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeImageModal()">&times;</span>
-        <img id="modalImage" src="" alt="">
-        <div class="modal-nav">
-            <button class="modal-nav-btn prev" onclick="modalPreviousImage(event)">‹</button>
-            <button class="modal-nav-btn next" onclick="modalNextImage(event)">›</button>
-        </div>
-        <div class="modal-caption" id="modalCaption"></div>
-    </div>
-</div>
+<!-- Użyj komponentu image gallery modal -->
+<x-image-gallery-modal />
 @endsection
 
 @push('scripts')
+<script src="{{ asset('js/image-gallery-modal.js') }}"></script>
 <script>
-let currentImageIndex = 0;
-const images = @json($product->images->map(function($image) {
+// Lokalna funkcjonalność dla strony produktu
+const productImages = @json($product->images->map(function($image) {
     return [
         'url' => asset('storage/' . $image->image_path),
         'alt' => $image->alt_text ?? $product->name
     ];
 }));
 
-function changeMainImage(src, alt, index) {
-    document.getElementById('mainImage').src = src;
-    document.getElementById('mainImage').alt = alt;
-    currentImageIndex = index;
-    
-    // Update active thumbnail
-    document.querySelectorAll('.thumbnail').forEach(thumb => thumb.classList.remove('active'));
-    document.querySelectorAll('.thumbnail')[index].classList.add('active');
-}
-
-function previousImage() {
-    if (images.length <= 1) return;
-    currentImageIndex = currentImageIndex > 0 ? currentImageIndex - 1 : images.length - 1;
-    changeMainImage(images[currentImageIndex].url, images[currentImageIndex].alt, currentImageIndex);
-}
-
-function nextImage() {
-    if (images.length <= 1) return;
-    currentImageIndex = currentImageIndex < images.length - 1 ? currentImageIndex + 1 : 0;
-    changeMainImage(images[currentImageIndex].url, images[currentImageIndex].alt, currentImageIndex);
-}
-
-function openImageModal(src, alt) {
-    document.getElementById('imageModal').style.display = 'flex';
-    document.getElementById('modalImage').src = src;
-    document.getElementById('modalCaption').textContent = alt;
-    document.body.style.overflow = 'hidden';
-}
-
-function closeImageModal() {
-    document.getElementById('imageModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-function modalPreviousImage(event) {
-    event.stopPropagation();
-    previousImage();
-    document.getElementById('modalImage').src = images[currentImageIndex].url;
-    document.getElementById('modalCaption').textContent = images[currentImageIndex].alt;
-}
-
-function modalNextImage(event) {
-    event.stopPropagation();
-    nextImage();
-    document.getElementById('modalImage').src = images[currentImageIndex].url;
-    document.getElementById('modalCaption').textContent = images[currentImageIndex].alt;
-}
-
-// Keyboard navigation
-document.addEventListener('keydown', function(e) {
-    if (document.getElementById('imageModal').style.display === 'flex') {
-        if (e.key === 'Escape') closeImageModal();
-        if (e.key === 'ArrowLeft') modalPreviousImage(e);
-        if (e.key === 'ArrowRight') modalNextImage(e);
+// ProductGallery klasa do zarządzania lokalną galerią (BEZ INTERFEROWANIA Z MODALEM)
+class ProductGallery {
+    constructor(images) {
+        this.images = images;
+        this.currentIndex = 0;
+        this.init();
     }
+
+    init() {
+        // Event listeners dla miniaturek
+        const thumbnails = document.querySelectorAll('.product-gallery .thumbnail');
+        thumbnails.forEach((thumbnail, index) => {
+            thumbnail.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.changeMainImage(index);
+            });
+        });
+
+        // Event listeners dla przycisków nawigacji
+        const prevBtn = document.querySelector('.product-gallery .prev-btn');
+        const nextBtn = document.querySelector('.product-gallery .next-btn');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.previousImage();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.nextImage();
+            });
+        }
+
+        // Obsługa klawiatury - TYLKO gdy modal NIE jest otwarty
+        document.addEventListener('keydown', (e) => {
+            // Sprawdź czy modal jest otwarty
+            const modal = document.getElementById('imageModal');
+            const isModalOpen = modal && modal.style.display === 'flex';
+            
+            if (isModalOpen) return; // Jeśli modal otwarty, nie rób nic
+            
+            if (e.target.tagName.toLowerCase() === 'input' || 
+                e.target.tagName.toLowerCase() === 'textarea') {
+                return; // Nie przeszkadzaj w formularzach
+            }
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.previousImage();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.nextImage();
+            }
+        });
+    }
+
+    changeMainImage(index) {
+        if (index < 0 || index >= this.images.length) return;
+        
+        const mainImage = document.getElementById('mainImage');
+        if (mainImage) {
+            mainImage.src = this.images[index].url;
+            mainImage.alt = this.images[index].alt;
+            this.currentIndex = index;
+            
+            // Update active thumbnail - TYLKO w product gallery
+            document.querySelectorAll('.product-gallery .thumbnail').forEach((thumb, idx) => {
+                thumb.classList.toggle('active', idx === index);
+            });
+        }
+    }
+
+    previousImage() {
+        if (this.images.length <= 1) return;
+        
+        const newIndex = this.currentIndex > 0 ? this.currentIndex - 1 : this.images.length - 1;
+        this.changeMainImage(newIndex);
+    }
+
+    nextImage() {
+        if (this.images.length <= 1) return;
+        
+        const newIndex = this.currentIndex < this.images.length - 1 ? this.currentIndex + 1 : 0;
+        this.changeMainImage(newIndex);
+    }
+}
+
+// Funkcje akcji produktu
+function addToCart(productId) {
+    alert('Produkt został dodany do koszyka!');
+    console.log('Dodano do koszyka produkt ID:', productId);
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '✅ Dodano!';
+    button.style.background = '#27ae60';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.background = '';
+    }, 2000);
+}
+
+function buyNow(productId) {
+    if (confirm('Czy chcesz przejść do kasy?')) {
+        console.log('Kup teraz produkt ID:', productId);
+        alert('Przekierowywanie do kasy...');
+    }
+}
+
+function toggleWishlist(productId) {
+    const button = event.target;
+    const isInWishlist = button.classList.contains('in-wishlist');
+    
+    if (isInWishlist) {
+        button.innerHTML = '❤️ Dodaj do ulubionych';
+        button.classList.remove('in-wishlist');
+        button.style.background = '';
+        alert('Usunięto z ulubionych!');
+    } else {
+        button.innerHTML = '💖 W ulubionych';
+        button.classList.add('in-wishlist');
+        button.style.background = '#e74c3c';
+        button.style.color = 'white';
+        alert('Dodano do ulubionych!');
+    }
+    
+    console.log('Toggle wishlist produkt ID:', productId);
+}
+
+// Inicjalizacja po załadowaniu DOM
+document.addEventListener('DOMContentLoaded', function() {
+    // Poczekaj na załadowanie global modal JS
+    setTimeout(() => {
+        if (productImages && productImages.length > 0) {
+            window.productGallery = new ProductGallery(productImages);
+            console.log('Product gallery initialized with', productImages.length, 'images');
+        }
+    }, 100);
 });
 </script>
 @endpush

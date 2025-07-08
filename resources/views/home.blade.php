@@ -1,8 +1,10 @@
+
 @extends('layouts.app')
 
 @section('title', 'Sklep - Najlepsze produkty online')
-
-
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/image-gallery-modal.css') }}">
+@endpush
 @section('content')
 <div class="container">
     <!-- Sekcja powitalna -->
@@ -20,12 +22,13 @@
     <!-- Siatka produktów -->
     <div class="products-grid">
         @forelse($products as $product)
-            <div class="product-card">
+            <div class="product-card" data-product-id="{{ $product->id }}">
                 <a href="{{ route('products.show', $product->id) }}">
                     @if($product->primaryImage)
                         <img src="{{ $product->primary_image_url }}" 
                              alt="{{ $product->primaryImage->alt_text ?? $product->name }}" 
-                             class="product-image">
+                             class="product-image"
+                             onclick="event.preventDefault(); openProductImageModal({{ $product->id }}, '{{ addslashes($product->name) }}', '{{ $product->formatted_price }}', '{{ route('products.show', $product->id) }}')">
                     @else
                         <div class="no-image">
                             📷 Brak zdjęcia
@@ -61,4 +64,6 @@
         </div>
     @endif
 </div>
+<x-image-gallery-modal />
+<script src="{{ asset('js/image-gallery-modal.js') }}"></script>
 @endsection

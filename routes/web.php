@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/product/{id}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/products/{id}/images', [ProductController::class, 'getImages']);
 
 
 Route::view('dashboard', 'dashboard')

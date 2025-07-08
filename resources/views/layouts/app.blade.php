@@ -12,7 +12,6 @@
     
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
     
     @stack('styles')
 </head>
@@ -103,7 +102,8 @@
             </div>
         </div>
     </footer>
-    
+    <x-image-gallery-modal />
+    <script src="{{ asset('js/image-gallery-modal.js') }}"></script>
     @stack('scripts')
 </body>
 </html>
