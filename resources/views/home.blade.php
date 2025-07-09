@@ -56,51 +56,5 @@
 
 @push('scripts')
 <script src="{{ asset('js/image-gallery-modal.js') }}"></script>
-<script>
-// Funkcje dla akcji produktów na stronie głównej
-function addToCart(productId) {
-    console.log('Adding to cart:', productId);
-    alert('Produkt został dodany do koszyka! (ID: ' + productId + ')');
-
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '✅ Dodano!';
-    button.style.background = '#27ae60';
-
-    setTimeout(() => {
-        button.innerHTML = originalText;
-        button.style.background = '';
-    }, 2000);
-}
-
-function buyNow(productId) {
-    console.log('Buy now:', productId);
-    if (confirm('Czy chcesz przejść do kasy? (Produkt ID: ' + productId + ')')) {
-        alert('Przekierowywanie do kasy...');
-    }
-}
-
-function toggleWishlist(productId) {
-    console.log('Toggle wishlist:', productId);
-    const button = event.target;
-    const isInWishlist = button.classList.contains('in-wishlist');
-
-    if (isInWishlist) {
-        button.innerHTML = '❤️ Dodaj do ulubionych';
-        button.classList.remove('in-wishlist');
-        button.style.background = '';
-        alert('Usunięto z ulubionych! (ID: ' + productId + ')');
-    } else {
-        button.innerHTML = '💖 W ulubionych';
-        button.classList.add('in-wishlist');
-        button.style.background = '#e74c3c';
-        button.style.color = 'white';
-        alert('Dodano do ulubionych! (ID: ' + productId + ')');
-    }
-}
-
-// Debug info
-console.log('Home page scripts loaded');
-console.log('Auth check:', @json(auth()->check()));
 </script>
 @endpush
