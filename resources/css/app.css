@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for shop - Ultra Modern Version */
+/* Custom styles for shop - Ultra Modern Enhanced Version */
 * {
     margin: 0;
     padding: 0;
@@ -11,7 +11,9 @@
 
 body {
     font-family: 'Figtree', Arial, sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, #000000 0%, #09022b 25%, #15023f 50%, #1c0469 75%, #20028e 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -19,7 +21,13 @@ body {
     overflow-x: hidden;
 }
 
-/* Animated background particles */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Enhanced animated background with multiple layers */
 body::before {
     content: '';
     position: fixed;
@@ -28,12 +36,17 @@ body::before {
     width: 100%;
     height: 100%;
     background:
-        radial-gradient(2px 2px at 40px 60px, rgba(102, 126, 234, 0.1), transparent),
-        radial-gradient(2px 2px at 90px 40px, rgba(118, 75, 162, 0.1), transparent),
-        radial-gradient(1px 1px at 160px 120px, rgba(102, 126, 234, 0.08), transparent),
-        radial-gradient(1px 1px at 220px 80px, rgba(118, 75, 162, 0.08), transparent);
-    background-size: 300px 300px;
-    animation: floatParticles 30s linear infinite;
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+        radial-gradient(2px 2px at 40px 60px, rgba(255, 255, 255, 0.3), transparent),
+        radial-gradient(2px 2px at 90px 40px, rgba(255, 255, 255, 0.25), transparent),
+        radial-gradient(1px 1px at 160px 120px, rgba(255, 255, 255, 0.2), transparent),
+        radial-gradient(1px 1px at 220px 80px, rgba(255, 255, 255, 0.15), transparent);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 300px 300px, 250px 250px, 200px 200px, 150px 150px;
+    animation:
+        floatParticles 30s linear infinite,
+        breathe 8s ease-in-out infinite;
     pointer-events: none;
     z-index: -1;
 }
@@ -45,14 +58,57 @@ body::before {
     100% { transform: translate(0, 0) rotate(360deg); }
 }
 
-/* Navigation styles - Ultra Modern */
+@keyframes breathe {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+}
+
+/* Floating orbs animation */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.1) 0%, transparent 30%),
+        radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 25%),
+        radial-gradient(circle at 30% 90%, rgba(255, 255, 255, 0.06) 0%, transparent 20%),
+        radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.04) 0%, transparent 15%);
+    animation: floatingOrbs 20s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+@keyframes floatingOrbs {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.3;
+    }
+    25% {
+        transform: translate(-20px, -30px) scale(1.1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translate(20px, -20px) scale(0.9);
+        opacity: 0.7;
+    }
+    75% {
+        transform: translate(-10px, 10px) scale(1.05);
+        opacity: 0.4;
+    }
+}
+
+/* Navigation styles - Ultra Modern Enhanced */
 .navbar {
-    background: rgba(255, 255, 255, 0.95);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.15);
+    -webkit-backdrop-filter: blur(25px);
+    backdrop-filter: blur(25px);
     box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.1),
-        0 2px 8px rgba(0, 0, 0, 0.05);
+        0 2px 8px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -85,13 +141,16 @@ body::before {
 .logo {
     font-size: 1.8rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: rgba(255, 255, 255, 0.95);
     text-decoration: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.logo:hover {
+    transform: scale(1.05);
+    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .logo::after {
@@ -101,7 +160,7 @@ body::before {
     left: 0;
     width: 0;
     height: 3px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: rgba(255, 255, 255, 0.8);
     transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     border-radius: 2px;
 }
@@ -117,7 +176,7 @@ body::before {
 }
 
 .nav-link {
-    color: #4a5568;
+    color: rgba(255, 255, 255, 0.9);
     text-decoration: none;
     font-weight: 600;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -125,6 +184,7 @@ body::before {
     padding: 0.5rem 1rem;
     border-radius: 12px;
     overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .nav-link::before {
@@ -134,7 +194,7 @@ body::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transition: left 0.5s ease;
 }
 
@@ -143,8 +203,9 @@ body::before {
 }
 
 .nav-link:hover {
-    color: #667eea;
+    color: rgba(255, 255, 255, 1);
     transform: translateY(-2px);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .auth-buttons {
@@ -183,9 +244,11 @@ body::before {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
     color: white;
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:hover {
@@ -194,18 +257,19 @@ body::before {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.9);
-    color: #4a5568;
-    border: 2px solid rgba(102, 126, 234, 0.2);
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 1);
-    border-color: rgba(102, 126, 234, 0.4);
+    background: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 1);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
 }
 
 .main-content {
@@ -240,42 +304,48 @@ body::before {
 }
 
 .header h1 {
-    font-size: 3rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.95);
     margin-bottom: 1rem;
-    animation: titleGlow 3s ease-in-out infinite;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    animation: titleFloat 4s ease-in-out infinite;
 }
 
-@keyframes titleGlow {
+@keyframes titleFloat {
     0%, 100% {
-        filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.3));
+        transform: translateY(0);
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
     50% {
-        filter: drop-shadow(0 0 30px rgba(102, 126, 234, 0.5));
+        transform: translateY(-5px);
+        text-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     }
 }
 
 .header p {
-    font-size: 1.2rem;
-    color: #6b7280;
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: fadeIn 1s ease-in-out 0.5s both;
 }
 
 .featured-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    color: rgba(255, 255, 255, 0.95);
     padding: 4rem 2rem;
     margin: 3rem 0;
-    border-radius: 24px;
+    border-radius: 30px;
     text-align: center;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 @keyframes scaleIn {
@@ -296,7 +366,7 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     animation: shimmer 4s ease-in-out infinite;
 }
 
@@ -306,21 +376,23 @@ body::before {
 }
 
 .featured-section h2 {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     margin-bottom: 1rem;
     position: relative;
     z-index: 1;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    font-weight: 800;
 }
 
 .featured-section p {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     opacity: 0.9;
     position: relative;
     z-index: 1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Products grid with staggered animation */
+/* Products grid with enhanced glass morphism */
 .products-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -329,15 +401,16 @@ body::before {
 }
 
 .product-card {
-    background: rgba(255, 255, 255, 0.95);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    -webkit-backdrop-filter: blur(25px);
+    backdrop-filter: blur(25px);
+    border-radius: 24px;
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.1),
-        0 2px 8px rgba(0, 0, 0, 0.05);
+        0 2px 8px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
@@ -369,10 +442,10 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
-    border-radius: 20px;
+    border-radius: 24px;
 }
 
 .product-card:hover::before {
@@ -380,21 +453,42 @@ body::before {
 }
 
 .product-card:hover {
-    transform: translateY(-10px) scale(1.02);
+    transform: translateY(-15px) scale(1.03);
     box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.15),
-        0 5px 20px rgba(0, 0, 0, 0.1);
+        0 25px 70px rgba(0, 0, 0, 0.15),
+        0 8px 30px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+/* Enhanced product image with better modal trigger */
 .product-image {
     width: 100%;
     height: 250px;
-    object-fit: cover;
-    border-radius: 16px;
+    border-radius: 20px;
     margin-bottom: 1.5rem;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
+    cursor: zoom-in;
+}
+
+.product-image::before {
+    content: '🔍';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.9);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 2;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.product-image:hover::before {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
 }
 
 .product-image::after {
@@ -404,9 +498,10 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.1) 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
+    border-radius: 20px;
 }
 
 .product-image:hover::after {
@@ -417,28 +512,30 @@ body::before {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .product-image:hover img {
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
+/* Enhanced no-image placeholder */
 .no-image {
     width: 100%;
     height: 250px;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #9ca3af;
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 1.5rem;
     font-size: 1.2rem;
     font-weight: 600;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .no-image::before {
@@ -449,14 +546,19 @@ body::before {
     right: 0;
     bottom: 0;
     background:
-        radial-gradient(circle at 30% 30%, rgba(102, 126, 234, 0.1), transparent),
-        radial-gradient(circle at 70% 70%, rgba(118, 75, 162, 0.1), transparent);
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2), transparent),
+        radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.15), transparent);
     animation: pulseGlow 3s ease-in-out infinite;
 }
 
 @keyframes pulseGlow {
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.6; }
+}
+
+.no-image:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+    transform: scale(1.02);
 }
 
 .product-info {
@@ -470,18 +572,20 @@ body::before {
 .product-name {
     margin: 0 0 1rem 0;
     font-size: 1.3rem;
-    color: #1f2937;
+    color: rgba(255, 255, 255, 0.95);
     font-weight: 700;
     line-height: 1.3;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .product-card:hover .product-name {
-    color: #667eea;
+    color: rgba(255, 255, 255, 1);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .product-description {
-    color: #6b7280;
+    color: rgba(255, 255, 255, 0.8);
     margin-bottom: 1.5rem;
     line-height: 1.6;
     font-size: 0.95rem;
@@ -491,62 +595,55 @@ body::before {
 .product-price {
     font-size: 1.8rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: rgba(255, 255, 255, 0.95);
     margin-bottom: 1rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     animation: priceGlow 2s ease-in-out infinite;
 }
 
 @keyframes priceGlow {
     0%, 100% {
-        filter: drop-shadow(0 0 5px rgba(102, 126, 234, 0.3));
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.3);
     }
     50% {
-        filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.5);
     }
 }
 
+/* Enhanced product stock indicator - POPRAWKA POZYCJI */
 .product-stock {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: rgba(255, 255, 255, 0.95);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: #059669;
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     z-index: 2;
-    animation: stockPulse 2s ease-in-out infinite;
+    animation: stockFloat 3s ease-in-out infinite;
+    margin-bottom: 0.2rem;
+    margin-top: 0.8rem;  /* Dodaj to */
+    display: inline-block;
+    width: fit-content;
 }
 
-@keyframes stockPulse {
+@keyframes stockFloat {
     0%, 100% {
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        transform: translateY(0);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     50% {
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     }
 }
 
 .product-stock.out-of-stock {
-    color: #dc2626;
-    border-color: rgba(239, 68, 68, 0.2);
-    animation: stockPulseRed 2s ease-in-out infinite;
-}
-
-@keyframes stockPulseRed {
-    0%, 100% {
-        box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
-    }
-    50% {
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
-    }
+    background: rgba(220, 38, 38, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(220, 38, 38, 0.5);
 }
 
 /* Product action buttons - Ultra Modern */
@@ -554,7 +651,7 @@ body::before {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: 1.5rem;
+    margin-top: 0.5rem;
 }
 
 .product-actions .btn {
@@ -576,36 +673,45 @@ body::before {
 }
 
 .btn-add-to-cart {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(29, 78, 216, 0.8) 100%);
     color: white;
     box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-add-to-cart:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 35px rgba(59, 130, 246, 0.5);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(29, 78, 216, 0.9) 100%);
 }
 
 .btn-buy-now {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(217, 119, 6, 0.8) 100%);
     color: white;
     box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-buy-now:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 35px rgba(245, 158, 11, 0.5);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(217, 119, 6, 0.9) 100%);
 }
 
 .btn-wishlist {
-    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.8) 0%, rgba(190, 24, 93, 0.8) 100%);
     color: white;
     box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-wishlist:hover {
     transform: translateY(-3px);
     box-shadow: 0 12px 35px rgba(236, 72, 153, 0.5);
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.9) 0%, rgba(190, 24, 93, 0.9) 100%);
 }
 
 .btn-wishlist.in-wishlist {
@@ -619,25 +725,27 @@ body::before {
 }
 
 .btn-notify {
-    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.8) 0%, rgba(75, 85, 99, 0.8) 100%);
     color: white;
     cursor: not-allowed;
     opacity: 0.7;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .btn-details {
-    background: rgba(255, 255, 255, 0.9);
-    color: #667eea;
-    border: 2px solid #667eea;
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-details:hover {
-    background: #667eea;
-    color: white;
+    background: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 1);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
 }
 
 /* Requires auth styling with modern effects */
@@ -652,7 +760,7 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
@@ -684,25 +792,29 @@ body::before {
     grid-column: 1 / -1;
     text-align: center;
     padding: 4rem 2rem;
-    background: rgba(255, 255, 255, 0.95);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+    -webkit-backdrop-filter: blur(25px);
+    backdrop-filter: blur(25px);
+    border-radius: 30px;
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.2);
     animation: fadeIn 0.8s ease-in-out;
 }
 
 .no-products h3 {
-    color: #1f2937;
+    color: rgba(255, 255, 255, 0.95);
     margin-bottom: 1rem;
     font-size: 1.8rem;
     font-weight: 700;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .no-products p {
-    color: #6b7280;
+    color: rgba(255, 255, 255, 0.8);
     font-size: 1.1rem;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Pagination with modern styling */
@@ -716,29 +828,34 @@ body::before {
 .pagination .page-link {
     padding: 0.75rem 1rem;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.9);
-    color: #667eea;
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
     text-decoration: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    border: 2px solid rgba(102, 126, 234, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     font-weight: 600;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 .pagination .page-link:hover {
-    background: #667eea;
-    color: white;
+    background: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 1);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
 }
 
 /* Footer styles - Ultra Modern */
 .footer {
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    color: white;
+    background: rgba(0, 0, 0, 0.3);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    color: rgba(255, 255, 255, 0.9);
     padding: 4rem 0 2rem;
     margin-top: auto;
     position: relative;
     overflow: hidden;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer::before {
@@ -749,8 +866,8 @@ body::before {
     right: 0;
     bottom: 0;
     background:
-        radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.1), transparent),
-        radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.1), transparent);
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05), transparent),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.03), transparent);
     animation: footerGlow 8s ease-in-out infinite;
 }
 
@@ -785,33 +902,31 @@ body::before {
 
 .footer-section h3 {
     margin-bottom: 1.5rem;
-    color: #f9fafb;
+    color: rgba(255, 255, 255, 0.95);
     font-size: 1.3rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .footer-section p,
 .footer-section a {
-    color: #d1d5db;
+    color: rgba(255, 255, 255, 0.8);
     line-height: 1.8;
     text-decoration: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .footer-section a:hover {
-    color: #667eea;
+    color: rgba(255, 255, 255, 1);
     transform: translateX(5px);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .footer-bottom {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 2rem;
     text-align: center;
-    color: #9ca3af;
+    color: rgba(255, 255, 255, 0.7);
     position: relative;
     z-index: 1;
 }
@@ -822,12 +937,12 @@ body::before {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #4a5568;
+    color: rgba(255, 255, 255, 0.9);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mobile-menu-btn:hover {
-    color: #667eea;
+    color: rgba(255, 255, 255, 1);
     transform: scale(1.1);
 }
 
@@ -842,22 +957,24 @@ body::before {
     to { opacity: 1; }
 }
 
-/* Scrollbar styling */
+/* Enhanced scrollbar styling */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 12px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 4px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%);
 }
 
 /* Mobile responsive - Enhanced */

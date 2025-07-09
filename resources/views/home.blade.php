@@ -21,7 +21,7 @@
     </div>
 
     <!-- DEBUG INFO -->
-    <div style="background: #f0f0f0; padding: 10px; margin: 20px 0; border-radius: 5px;">
+    <div style="background: rgba(255, 255, 255, 0.1);  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); color: rgba(255, 255, 255, 0.9); padding: 1.5rem 2rem; margin: 2rem 0; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1); position: relative; overflow: hidden; animation: debugSlideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);">
         <p><strong>Debug Info:</strong></p>
         <p>Liczba produktów: {{ $products->count() }}</p>
         <p>Zalogowany: {{ auth()->check() ? 'TAK' : 'NIE' }}</p>

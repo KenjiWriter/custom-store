@@ -48,7 +48,7 @@ class ProductSeeder extends Seeder
             ],
             [
                 'name' => 'Kamera Canon EOS R6',
-                'description' => 'Profesjonalna kamera bezlusterkowa z pełnoklatkową matrycą.',
+                'description' => 'Profesjonalna kamera bezlusterkowa z pełnoklatkową matrycą. Idealna do fotografii i wideo.',
                 'price' => 8999.99,
                 'stock_quantity' => 8,
                 'sku' => 'CANON-R6',
@@ -77,11 +77,11 @@ class ProductSeeder extends Seeder
             try {
                 // Pobierz obrazek z internetu
                 $response = Http::timeout(30)->get($imageUrl);
-                
+
                 if ($response->successful()) {
                     // Zapisz obrazek
                     Storage::disk('public')->put($imagePath, $response->body());
-                    
+
                     // Dodaj rekord do bazy danych
                     ProductImage::create([
                         'product_id' => $product->id,
