@@ -88,10 +88,10 @@
             <div class="product-actions">
                 @auth
                     @if($product->isInStock())
-                        <button class="btn-add-to-cart" onclick="addToCart({{ $product->id }})">
+                        <button class="btn-add-to-cart" onclick="authenticatedAddToCart({{ $product->id }})">
                             🛒 Dodaj do koszyka
                         </button>
-                        <button class="btn-buy-now" onclick="buyNow({{ $product->id }})">
+                        <button class="btn-buy-now" onclick="authenticatedBuyNow({{ $product->id }})">
                             ⚡ Kup teraz
                         </button>
                     @else
@@ -99,15 +99,15 @@
                             🔔 Powiadom o dostępności
                         </button>
                     @endif
-                    <button class="btn-wishlist" onclick="toggleWishlist({{ $product->id }})">
+                    <button class="btn-wishlist" onclick="authenticatedToggleWishlist({{ $product->id }})">
                         ❤️ Dodaj do ulubionych
                     </button>
                 @else
                     @if($product->isInStock())
-                        <button class="requires-auth btn-add-to-cart" data-action="add-to-cart">
+                        <button class="requires-auth btn-add-to-cart" data-action="add-to-cart" data-product-id="{{ $product->id }}">
                             🛒 Dodaj do koszyka
                         </button>
-                        <button class="requires-auth btn-buy-now" data-action="buy-now">
+                        <button class="requires-auth btn-buy-now" data-action="buy-now" data-product-id="{{ $product->id }}">
                             ⚡ Kup teraz
                         </button>
                     @else
@@ -115,7 +115,7 @@
                             🔔 Powiadom o dostępności
                         </button>
                     @endif
-                    <button class="requires-auth btn-wishlist" data-action="add-to-favorites">
+                    <button class="requires-auth btn-wishlist" data-action="add-to-favorites" data-product-id="{{ $product->id }}">
                         ❤️ Dodaj do ulubionych
                     </button>
                 @endauth
@@ -208,7 +208,9 @@ class ProductGallery {
         document.addEventListener('keydown', (e) => {
             // Sprawdź czy modal jest otwarty
             const modal = document.getElementById('imageModal');
-            const isModalOpen = modal && modal.style.display === 'flex';
+            const authModal = document.getElementById('authModal');
+            const isModalOpen = (modal && modal.style.display === 'flex') ||
+                              (authModal && authModal.style.display === 'flex');
 
             if (isModalOpen) return; // Jeśli modal otwarty, nie rób nic
 
@@ -220,8 +222,7 @@ class ProductGallery {
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 this.previousImage();
-            }
-            if (e.key === 'ArrowRight') {
+            } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 this.nextImage();
             }
@@ -231,19 +232,17 @@ class ProductGallery {
     changeMainImage(index) {
         if (index < 0 || index >= this.images.length) return;
 
-        this.currentIndex = index;
         const mainImage = document.getElementById('mainImage');
-        const thumbnails = document.querySelectorAll('.product-gallery .thumbnail');
-
-        if (mainImage && this.images[index]) {
+        if (mainImage) {
             mainImage.src = this.images[index].url;
             mainImage.alt = this.images[index].alt;
-        }
+            this.currentIndex = index;
 
-        // Aktualizuj active class na miniaturkach
-        thumbnails.forEach((thumb, i) => {
-            thumb.classList.toggle('active', i === index);
-        });
+            // Update active thumbnail - TYLKO w product gallery
+            document.querySelectorAll('.product-gallery .thumbnail').forEach((thumb, idx) => {
+                thumb.classList.toggle('active', idx === index);
+            });
+        }
     }
 
     previousImage() {
@@ -259,74 +258,6 @@ class ProductGallery {
         const newIndex = this.currentIndex < this.images.length - 1 ? this.currentIndex + 1 : 0;
         this.changeMainImage(newIndex);
     }
-}
-
-// Funkcje akcji produktu
-function addToCart(productId) {
-    fetch(`/cart/add/${productId}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const button = event.target;
-            const originalText = button.innerHTML;
-            button.innerHTML = '✅ Dodano!';
-            button.style.background = '#27ae60';
-
-            setTimeout(() => {
-                button.innerHTML = originalText;
-                button.style.background = '';
-            }, 2000);
-        } else {
-            alert('Wystąpił błąd podczas dodawania do koszyka');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Wystąpił błąd podczas dodawania do koszyka');
-    });
-}
-
-function buyNow(productId) {
-    if (confirm('Czy chcesz przejść do kasy?')) {
-        window.location.href = `/checkout/product/${productId}`;
-    }
-}
-
-function toggleWishlist(productId) {
-    fetch(`/wishlist/toggle/${productId}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const button = event.target;
-            if (data.added) {
-                button.innerHTML = '💖 W ulubionych';
-                button.classList.add('in-wishlist');
-                button.style.background = '#e74c3c';
-                button.style.color = 'white';
-            } else {
-                button.innerHTML = '❤️ Dodaj do ulubionych';
-                button.classList.remove('in-wishlist');
-                button.style.background = '';
-                button.style.color = '';
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Wystąpił błąd');
-    });
 }
 
 // Inicjalizacja po załadowaniu DOM

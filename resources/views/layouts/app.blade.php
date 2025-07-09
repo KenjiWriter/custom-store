@@ -13,6 +13,9 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <!-- Auth Modal CSS -->
+    <link rel="stylesheet" href="{{ asset('css/auth-modal.css') }}">
+
     @stack('styles')
 </head>
 <body>
@@ -72,15 +75,6 @@
                     <p>⏰ Pn-Pt: 8:00-18:00, Sb: 9:00-15:00</p>
                 </div>
 
-                <!-- Przydatne linki -->
-                <div class="footer-section">
-                    <h3>Przydatne linki</h3>
-                    <a href="#">Regulamin</a>
-                    <a href="#">Polityka prywatności</a>
-                    <a href="#">Dostawa i zwroty</a>
-                    <a href="#">FAQ</a>
-                </div>
-
                 <!-- Lokalizacja -->
                 <div class="footer-section">
                     <h3>Nasza lokalizacja</h3>
@@ -118,6 +112,7 @@
     @endif
 
     <x-image-gallery-modal />
+    <script src="{{ asset('js/auth-modal.js') }}"></script>
     <script src="{{ asset('js/image-gallery-modal.js') }}"></script>
     @stack('scripts')
 </body>

@@ -1,9 +1,11 @@
 @extends('layouts.app')
 
 @section('title', 'Sklep - Najlepsze produkty online')
+
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/image-gallery-modal.css') }}">
 @endpush
+
 @section('content')
 <div class="container">
     <!-- Sekcja powitalna -->
@@ -18,65 +20,24 @@
         <p>Sprawdź nasze najnowsze produkty i skorzystaj z wyjątkowych promocji</p>
     </div>
 
+    <!-- DEBUG INFO -->
+    <div style="background: #f0f0f0; padding: 10px; margin: 20px 0; border-radius: 5px;">
+        <p><strong>Debug Info:</strong></p>
+        <p>Liczba produktów: {{ $products->count() }}</p>
+        <p>Zalogowany: {{ auth()->check() ? 'TAK' : 'NIE' }}</p>
+        <p>User ID: {{ auth()->id() ?? 'Brak' }}</p>
+    </div>
+
     <!-- Siatka produktów -->
     <div class="products-grid">
         @forelse($products as $product)
-            <div class="product-card" data-product-id="{{ $product->id }}">
-                <div class="product-image">
-                    @if($product->primaryImage)
-                        <img src="{{ $product->primary_image_url }}"
-                             alt="{{ $product->name }}"
-                             onclick="openProductImageModal({{ $product->id }}, '{{ addslashes($product->name) }}', '{{ $product->formatted_price }}', '{{ route('products.show', $product->id) }}')">
-                    @else
-                        <div class="no-image">📷 Brak zdjęcia</div>
-                    @endif
-                </div>
-                <div class="product-info">
-                    <h3>{{ $product->name }}</h3>
-                    <p class="price">{{ $product->formatted_price }}</p>
-                    <p class="description">{{ Str::limit($product->description, 100) }}</p>
-
-                    <!-- Przyciski akcji -->
-                    <div class="product-actions">
-                        @auth
-                            <button class="btn btn-primary" onclick="addToCart({{ $product->id }})">
-                                🛒 Dodaj do koszyka
-                            </button>
-                            <button class="btn btn-secondary" onclick="buyNow({{ $product->id }})">
-                                ⚡ Kup teraz
-                            </button>
-                            <button class="btn btn-wishlist" onclick="toggleWishlist({{ $product->id }})">
-                                ❤️ Ulubione
-                            </button>
-                        @else
-                            <button class="requires-auth btn btn-primary" data-action="add-to-cart">
-                                🛒 Dodaj do koszyka
-                            </button>
-                            <button class="requires-auth btn btn-secondary" data-action="buy-now">
-                                ⚡ Kup teraz
-                            </button>
-                            <button class="requires-auth btn btn-wishlist" data-action="add-to-favorites">
-                                ❤️ Ulubione
-                            </button>
-                        @endauth
-                    </div>
-
-                    <a href="{{ route('products.show', $product->id) }}" class="btn btn-outline">
-                        Zobacz szczegóły
-                    </a>
-                </div>
-                <div class="product-stock">
-                    @if($product->isInStock())
-                        ✅ Dostępne: {{ $product->stock_quantity }} szt.
-                    @else
-                        ❌ Brak w magazynie
-                    @endif
-                </div>
-            </div>
+            <!-- UŻYJ METODY Z MODELU -->
+            {!! $product->card_html !!}
         @empty
             <div class="no-products">
                 <h3>🛍️ Brak produktów</h3>
                 <p>Aktualnie nie mamy produktów do wyświetlenia. Sprawdź ponownie wkrótce!</p>
+                <p><a href="{{ route('home') }}">Odśwież stronę</a></p>
             </div>
         @endforelse
     </div>
@@ -88,65 +49,58 @@
         </div>
     @endif
 </div>
-<x-image-gallery-modal />
-<script src="{{ asset('js/image-gallery-modal.js') }}"></script>
 
+<x-image-gallery-modal />
+
+@endsection
+
+@push('scripts')
+<script src="{{ asset('js/image-gallery-modal.js') }}"></script>
 <script>
 // Funkcje dla akcji produktów na stronie głównej
 function addToCart(productId) {
-    fetch(`/cart/add/${productId}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Produkt został dodany do koszyka!');
-            // Opcjonalnie: aktualizuj licznik koszyka
-        } else {
-            alert('Wystąpił błąd podczas dodawania do koszyka');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Wystąpił błąd podczas dodawania do koszyka');
-    });
+    console.log('Adding to cart:', productId);
+    alert('Produkt został dodany do koszyka! (ID: ' + productId + ')');
+
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '✅ Dodano!';
+    button.style.background = '#27ae60';
+
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.background = '';
+    }, 2000);
 }
 
 function buyNow(productId) {
-    if (confirm('Czy chcesz przejść do kasy?')) {
-        window.location.href = `/checkout/product/${productId}`;
+    console.log('Buy now:', productId);
+    if (confirm('Czy chcesz przejść do kasy? (Produkt ID: ' + productId + ')')) {
+        alert('Przekierowywanie do kasy...');
     }
 }
 
 function toggleWishlist(productId) {
-    fetch(`/wishlist/toggle/${productId}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const button = event.target;
-            if (data.added) {
-                button.innerHTML = '💖 W ulubionych';
-                button.classList.add('in-wishlist');
-            } else {
-                button.innerHTML = '❤️ Ulubione';
-                button.classList.remove('in-wishlist');
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Wystąpił błąd');
-    });
+    console.log('Toggle wishlist:', productId);
+    const button = event.target;
+    const isInWishlist = button.classList.contains('in-wishlist');
+
+    if (isInWishlist) {
+        button.innerHTML = '❤️ Dodaj do ulubionych';
+        button.classList.remove('in-wishlist');
+        button.style.background = '';
+        alert('Usunięto z ulubionych! (ID: ' + productId + ')');
+    } else {
+        button.innerHTML = '💖 W ulubionych';
+        button.classList.add('in-wishlist');
+        button.style.background = '#e74c3c';
+        button.style.color = 'white';
+        alert('Dodano do ulubionych! (ID: ' + productId + ')');
+    }
 }
+
+// Debug info
+console.log('Home page scripts loaded');
+console.log('Auth check:', @json(auth()->check()));
 </script>
-@endsection
+@endpush
