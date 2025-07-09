@@ -3,22 +3,29 @@ class AuthModal {
         this.modal = null;
         this.isOpen = false;
         this.actionData = null;
+        this.focusTrapped = false;
         this.init();
     }
 
     init() {
         this.modal = document.getElementById('authModal');
-
         if (!this.modal) {
             console.warn('Auth modal element not found');
             return;
         }
 
-        // Event listeners
         this.bindEvents();
-
-        // Automatyczne inicjowanie dla requires-auth elementów
         this.initRequiresAuthElements();
+        this.preloadModal();
+    }
+
+    preloadModal() {
+        // Preload modal dla lepszej performance
+        const content = this.modal.querySelector('.auth-modal-content');
+        if (content) {
+            content.style.transform = 'translate(-50%, -50%) scale(0.95)';
+            content.style.opacity = '0';
+        }
     }
 
     bindEvents() {
@@ -29,10 +36,15 @@ class AuthModal {
             }
         });
 
-        // Obsługa klawisza Escape
+        // Obsługa klawiatury
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.isOpen) {
                 this.close();
+            }
+
+            // Trap focus w modalu
+            if (this.isOpen && e.key === 'Tab') {
+                this.trapFocus(e);
             }
         });
 
@@ -42,6 +54,45 @@ class AuthModal {
             modalContent.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
+        }
+
+        // Obsługa przycisków
+        const loginBtn = this.modal.querySelector('.auth-login-btn');
+        const registerBtn = this.modal.querySelector('.auth-register-btn');
+
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                this.trackAction('login_clicked');
+                this.showLoading();
+            });
+        }
+
+        if (registerBtn) {
+            registerBtn.addEventListener('click', () => {
+                this.trackAction('register_clicked');
+                this.showLoading();
+            });
+        }
+    }
+
+    trapFocus(e) {
+        const focusableElements = this.modal.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+            if (document.activeElement === firstFocusable) {
+                lastFocusable.focus();
+                e.preventDefault();
+            }
+        } else {
+            if (document.activeElement === lastFocusable) {
+                firstFocusable.focus();
+                e.preventDefault();
+            }
         }
     }
 
@@ -65,64 +116,104 @@ class AuthModal {
     showForAction(action, productId, productName = 'tego produktu') {
         this.actionData = { action, productId, productName };
 
-        let title = 'Wymagane logowanie';
-        let message = 'Aby wykonać tę akcję, musisz się zalogować.';
-
-        switch (action) {
-            case 'add-to-cart':
-                title = '🛒 Dodawanie do koszyka';
-                message = `Aby dodać "${productName}" do koszyka, musisz się zalogować.`;
-                break;
-            case 'buy-now':
-                title = '⚡ Kup teraz';
-                message = `Aby kupić "${productName}", musisz się zalogować.`;
-                break;
-            case 'add-to-favorites':
-                title = '💖 Dodaj do ulubionych';
-                message = `Aby dodać "${productName}" do ulubionych, musisz się zalogować.`;
-                break;
-            case 'notify-availability':
-                title = '🔔 Powiadomienia';
-                message = `Aby otrzymywać powiadomienia o dostępności "${productName}", musisz się zalogować.`;
-                break;
-            default:
-                title = 'Wymagane logowanie';
-                message = 'Aby wykonać tę akcję, musisz się zalogować.';
-        }
-
-        this.show(title, message);
+        const actionConfig = this.getActionConfig(action, productName);
+        this.show(actionConfig.title, actionConfig.message, actionConfig.icon);
     }
 
-    show(title = 'Wymagane logowanie', message = 'Aby wykonać tę akcję, musisz się zalogować.') {
+    getActionConfig(action, productName) {
+        const configs = {
+            'add-to-cart': {
+                title: '🛒 Dodawanie do koszyka',
+                message: `Aby dodać "${productName}" do koszyka, zaloguj się i ciesz się szybszymi zakupami.`,
+                icon: '🛒'
+            },
+            'buy-now': {
+                title: '⚡ Ekspresowe zakupy',
+                message: `Aby kupić "${productName}" natychmiast, zaloguj się dla bezpiecznej transakcji.`,
+                icon: '⚡'
+            },
+            'add-to-favorites': {
+                title: '💖 Lista ulubionych',
+                message: `Aby dodać "${productName}" do ulubionych, zaloguj się i nigdy nie zgub swoich marzeń.`,
+                icon: '💖'
+            },
+            'notify-availability': {
+                title: '🔔 Powiadomienia',
+                message: `Aby otrzymywać powiadomienia o dostępności "${productName}", zaloguj się.`,
+                icon: '🔔'
+            }
+        };
+
+        return configs[action] || {
+            title: 'Wymagane logowanie',
+            message: 'Aby wykonać tę akcję, musisz się zalogować.',
+            icon: '🔐'
+        };
+    }
+
+    show(title = 'Wymagane logowanie', message = 'Aby wykonać tę akcję, musisz się zalogować.', icon = '🔐') {
         if (!this.modal) return;
 
-        // Ustaw tytuł i wiadomość
-        const titleElement = document.getElementById('authModalTitle');
-        const messageElement = document.getElementById('authModalMessage');
+        // Ustaw zawartość
+        this.updateModalContent(title, message, icon);
 
-        if (titleElement) titleElement.textContent = title;
-        if (messageElement) messageElement.textContent = message;
-
-        // Pokaż modal
-        this.modal.style.display = 'block';
+        // Animacje otwarcia
+        this.modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+
+        // Trigger reflow
+        this.modal.offsetHeight;
+
         this.isOpen = true;
+        this.focusTrapped = true;
+
+        // Animuj zawartość
+        const content = this.modal.querySelector('.auth-modal-content');
+        if (content) {
+            setTimeout(() => {
+                content.style.transform = 'translate(-50%, -50%) scale(1)';
+                content.style.opacity = '1';
+            }, 50);
+        }
 
         // Focus na pierwszy przycisk
         setTimeout(() => {
             const firstButton = this.modal.querySelector('.auth-login-btn');
             if (firstButton) firstButton.focus();
-        }, 100);
+        }, 200);
 
-        // Analytics/tracking
         this.trackModalOpen();
+    }
+
+    updateModalContent(title, message, icon) {
+        const titleElement = document.getElementById('authModalTitle');
+        const messageElement = document.getElementById('authModalMessage');
+        const iconElement = this.modal.querySelector('.auth-icon');
+
+        if (titleElement) titleElement.textContent = title;
+        if (messageElement) messageElement.textContent = message;
+        if (iconElement) iconElement.textContent = icon;
+    }
+
+    showLoading() {
+        const loading = document.getElementById('authModalLoading');
+        if (loading) {
+            loading.classList.add('active');
+        }
+    }
+
+    hideLoading() {
+        const loading = document.getElementById('authModalLoading');
+        if (loading) {
+            loading.classList.remove('active');
+        }
     }
 
     close() {
         if (!this.modal || !this.isOpen) return;
 
-        // Dodaj klasę animacji zamykania
         this.modal.classList.add('closing');
+        this.focusTrapped = false;
 
         setTimeout(() => {
             this.modal.style.display = 'none';
@@ -130,18 +221,25 @@ class AuthModal {
             document.body.style.overflow = 'auto';
             this.isOpen = false;
             this.actionData = null;
+            this.hideLoading();
+
+            // Reset content position
+            const content = this.modal.querySelector('.auth-modal-content');
+            if (content) {
+                content.style.transform = 'translate(-50%, -50%) scale(0.95)';
+                content.style.opacity = '0';
+            }
         }, 300);
 
-        // Analytics/tracking
         this.trackModalClose();
     }
 
     trackModalOpen() {
-        // Tracking dla analytics
         if (typeof gtag !== 'undefined') {
             gtag('event', 'auth_modal_open', {
                 event_category: 'engagement',
-                event_label: this.actionData?.action || 'unknown'
+                event_label: this.actionData?.action || 'unknown',
+                custom_parameter_1: this.actionData?.productId || null
             });
         }
 
@@ -149,17 +247,24 @@ class AuthModal {
     }
 
     trackModalClose() {
-        // Tracking dla analytics
         if (typeof gtag !== 'undefined') {
             gtag('event', 'auth_modal_close', {
                 event_category: 'engagement'
             });
         }
-
-        console.log('Auth modal closed');
     }
 
-    // Metody publiczne dla kompatybilności
+    trackAction(action) {
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'auth_modal_action', {
+                event_category: 'engagement',
+                event_label: action,
+                custom_parameter_1: this.actionData?.productId || null
+            });
+        }
+    }
+
+    // Publiczne metody dla kompatybilności
     openForAddToCart(productId, productName) {
         this.showForAction('add-to-cart', productId, productName);
     }
@@ -179,13 +284,13 @@ let authModal;
 function initAuthModal() {
     if (!authModal) {
         authModal = new AuthModal();
-        console.log('Auth Modal initialized');
+        console.log('Auth Modal initialized with enhancements');
     }
 }
 
-function showAuthModal(title, message) {
+function showAuthModal(title, message, icon) {
     if (!authModal) initAuthModal();
-    authModal.show(title, message);
+    authModal.show(title, message, icon);
 }
 
 function closeAuthModal() {
@@ -197,7 +302,7 @@ function showAuthModalForAction(action, productId, productName) {
     authModal.showForAction(action, productId, productName);
 }
 
-// Funkcje pomocnicze dla specific actions
+// Funkcje pomocnicze
 function requireAuth(action, productId = null, productName = 'produkt') {
     if (!authModal) initAuthModal();
     authModal.showForAction(action, productId, productName);
@@ -215,9 +320,8 @@ function requireAuthForWishlist(productId, productName) {
     requireAuth('add-to-favorites', productId, productName);
 }
 
-// Auto-inicjalizacja po załadowaniu DOM
+// Auto-inicjalizacja
 document.addEventListener('DOMContentLoaded', function () {
-    // Inicjalizuj tylko jeśli użytkownik nie jest zalogowany
     const isAuthenticated = document.querySelector('meta[name="user-authenticated"]');
     const hasAuthModal = document.getElementById('authModal');
 
