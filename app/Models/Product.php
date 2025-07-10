@@ -1,6 +1,4 @@
 <?php
-// filepath: c:\xampp\htdocs\custom-store\app\Models\Product.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,6 +30,41 @@ class Product extends Model
     public function primaryImage()
     {
         return $this->hasOne(ProductImage::class)->where('is_primary', true);
+    }
+
+    // DODANE RELACJE DLA WISHLIST
+
+    /**
+     * Relacja do wishlist
+     */
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    /**
+     * Relacja many-to-many do użytkowników przez wishlist
+     */
+    public function wishlistedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'wishlists')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Sprawdź czy produkt jest w ulubionych określonego użytkownika
+     */
+    public function isInUserWishlist($userId)
+    {
+        return $this->wishlists()->where('user_id', $userId)->exists();
+    }
+
+    /**
+     * Pobierz liczbę użytkowników którzy dodali ten produkt do ulubionych
+     */
+    public function getWishlistCountAttribute()
+    {
+        return $this->wishlists()->count();
     }
 
     public function getPrimaryImageUrlAttribute()
@@ -75,6 +108,9 @@ class Product extends Model
         $authButtonsHtml = '';
 
         if ($isAuthenticated) {
+            $user = auth()->user();
+            $isInWishlist = $user->hasInWishlist($this->id);
+
             if ($this->isInStock()) {
                 $authButtonsHtml = '
                     <button class="btn-add-to-cart" onclick="addToCart(' . $this->id . ')">
@@ -89,9 +125,18 @@ class Product extends Model
                         🔔 Powiadom o dostępności
                     </button>';
             }
+
+            // PRZYCISK WISHLIST - z dynamicznym stanem
+            $wishlistIcon = $isInWishlist ? '💖' : '❤️';
+            $wishlistText = $isInWishlist ? 'W ulubionych' : 'Dodaj do ulubionych';
+            $wishlistClass = $isInWishlist ? 'btn-wishlist in-wishlist' : 'btn-wishlist';
+
             $authButtonsHtml .= '
-                <button class="btn-wishlist" onclick="toggleWishlist(' . $this->id . ')">
-                    ❤️ Dodaj do ulubionych
+                <button class="' . $wishlistClass . '"
+                        onclick="toggleWishlist(' . $this->id . ', this)"
+                        data-product-id="' . $this->id . '"
+                        data-in-wishlist="' . ($isInWishlist ? 'true' : 'false') . '">
+                    ' . $wishlistIcon . ' ' . $wishlistText . '
                 </button>';
         } else {
             if ($this->isInStock()) {

@@ -4,6 +4,9 @@ class ImageGalleryModal {
         this.images = [];
         this.productData = null;
         this.isModalOpen = false;
+        this.isNavigating = false;
+        this.touchStartX = 0;
+        this.touchEndX = 0;
         this.init();
     }
 
@@ -14,20 +17,55 @@ class ImageGalleryModal {
                 if (e.key === 'Escape') this.closeModal();
                 if (e.key === 'ArrowLeft') this.previousImage(e);
                 if (e.key === 'ArrowRight') this.nextImage(e);
+                if (e.key === 'Home') this.goToImage(0, e);
+                if (e.key === 'End') this.goToImage(this.images.length - 1, e);
+            }
+        });
+
+        // Obsługa gestów touch
+        document.addEventListener('touchstart', (e) => {
+            if (this.isModalOpen) {
+                this.touchStartX = e.changedTouches[0].screenX;
+            }
+        });
+
+        document.addEventListener('touchend', (e) => {
+            if (this.isModalOpen) {
+                this.touchEndX = e.changedTouches[0].screenX;
+                this.handleSwipe();
             }
         });
 
         // Zapobiegaj zamykaniu modala przy kliknięciu na zawartość
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.modal-content')) {
+            if (e.target.closest('.modal-content') && !e.target.closest('.modal-close-btn')) {
                 e.stopPropagation();
+            }
+        });
+
+        // Zamykanie modala przy kliknięciu w tło
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('image-modal') && this.isModalOpen) {
+                this.closeModal();
             }
         });
     }
 
+    handleSwipe() {
+        const swipeThreshold = 50;
+        const swipeDistance = this.touchEndX - this.touchStartX;
+
+        if (Math.abs(swipeDistance) > swipeThreshold) {
+            if (swipeDistance > 0) {
+                this.previousImage();
+            } else {
+                this.nextImage();
+            }
+        }
+    }
+
     // Otwórz modal z danymi produktu
     openProductModal(productId, productName, productPrice, productUrl) {
-        // Pobierz dane produktu z API lub localStorage
         this.loadProductImages(productId, productName, productPrice, productUrl);
     }
 
@@ -57,6 +95,8 @@ class ImageGalleryModal {
     // Załaduj obrazki produktu
     async loadProductImages(productId, productName, productPrice, productUrl) {
         try {
+            this.showLoading();
+
             // Próbuj pobrać z cache lub API
             const cacheKey = `product_images_${productId}`;
             let images = localStorage.getItem(cacheKey);
@@ -85,9 +125,11 @@ class ImageGalleryModal {
                 url: productUrl
             };
             this.currentImageIndex = 0;
+            this.hideLoading();
             this.showModal();
         } catch (error) {
             console.error('Błąd ładowania obrazków:', error);
+            this.hideLoading();
             // Fallback
             this.images = this.getImagesFromDOM(productId);
             this.showModal();
@@ -113,74 +155,268 @@ class ImageGalleryModal {
         if (this.images.length === 0) return;
 
         const modal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const modalCaption = document.getElementById('modalCaption');
-        const modalCounter = document.getElementById('modalCounter');
-
-        // Sprawdź czy elementy istnieją
-        if (!modal || !modalImage || !modalCaption || !modalCounter) {
-            console.error('Nie można znaleźć elementów modala');
+        if (!modal) {
+            console.error('Modal element not found');
             return;
         }
 
-        // Pokaż modal
+        // Pokaż modal z animacją
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+
+        // Trigger reflow
+        modal.offsetHeight;
+
+        modal.classList.add('active');
         this.isModalOpen = true;
 
         // Ustaw obrazek
         this.updateModalImage();
+        this.updateNavigation();
+        this.updateCounter();
+        this.updateProductInfo();
+        this.createThumbnails();
 
-        // Pokaż/ukryj nawigację - TYLKO przyciski w modalu
-        const navButtons = modal.querySelectorAll('.modal-nav-btn');
-        navButtons.forEach(btn => {
-            btn.style.display = this.images.length > 1 ? 'block' : 'none';
-        });
-
-        // Ustaw licznik
-        modalCounter.textContent = `${this.currentImageIndex + 1} / ${this.images.length}`;
+        // Dodaj efekty parallax
+        this.startParallaxEffects();
     }
 
     updateModalImage() {
-        const modalImage = document.getElementById('modalImage');
-        const modalCaption = document.getElementById('modalCaption');
-        const modalCounter = document.getElementById('modalCounter');
+        if (this.images.length === 0) return;
 
-        if (modalImage && modalCaption && modalCounter && this.images[this.currentImageIndex]) {
-            modalImage.src = this.images[this.currentImageIndex].url;
-            modalImage.alt = this.images[this.currentImageIndex].alt;
-            modalCaption.textContent = this.images[this.currentImageIndex].alt;
-            modalCounter.textContent = `${this.currentImageIndex + 1} / ${this.images.length}`;
+        const modalImage = document.getElementById('modalImage');
+        if (!modalImage) return;
+
+        const currentImage = this.images[this.currentImageIndex];
+
+        // Animacja fade podczas zmiany obrazka
+        modalImage.style.opacity = '0';
+        modalImage.style.transform = 'scale(0.95)';
+
+        setTimeout(() => {
+            modalImage.src = currentImage.url;
+            modalImage.alt = currentImage.alt || 'Zdjęcie produktu';
+
+            modalImage.onload = () => {
+                modalImage.style.opacity = '1';
+                modalImage.style.transform = 'scale(1)';
+            };
+        }, 150);
+    }
+
+    updateNavigation() {
+        const prevBtn = document.querySelector('.modal-nav-prev');
+        const nextBtn = document.querySelector('.modal-nav-next');
+
+        if (prevBtn && nextBtn) {
+            const hasMultipleImages = this.images.length > 1;
+
+            prevBtn.style.display = hasMultipleImages ? 'flex' : 'none';
+            nextBtn.style.display = hasMultipleImages ? 'flex' : 'none';
+
+            // Dodaj efekt bounce przy hover
+            if (hasMultipleImages) {
+                this.addNavigationEffects(prevBtn, nextBtn);
+            }
+        }
+    }
+
+    addNavigationEffects(prevBtn, nextBtn) {
+        // Usuwaj poprzednie listenery
+        prevBtn.removeEventListener('mouseenter', this.prevHoverEffect);
+        nextBtn.removeEventListener('mouseenter', this.nextHoverEffect);
+
+        // Dodaj nowe efekty
+        this.prevHoverEffect = () => this.triggerNavigationEffect(prevBtn, 'left');
+        this.nextHoverEffect = () => this.triggerNavigationEffect(nextBtn, 'right');
+
+        prevBtn.addEventListener('mouseenter', this.prevHoverEffect);
+        nextBtn.addEventListener('mouseenter', this.nextHoverEffect);
+    }
+
+    triggerNavigationEffect(button, direction) {
+        // Animacja ripple
+        const ripple = button.querySelector('.nav-ripple');
+        if (ripple) {
+            ripple.style.width = '0';
+            ripple.style.height = '0';
+            ripple.style.opacity = '0.3';
+
+            setTimeout(() => {
+                ripple.style.width = '120px';
+                ripple.style.height = '120px';
+                ripple.style.opacity = '0';
+            }, 50);
+        }
+
+        // Lekka animacja strzałki
+        const arrow = button.querySelector('.nav-arrow');
+        if (arrow) {
+            const moveDistance = direction === 'left' ? '-5px' : '5px';
+            arrow.style.transform = `translateX(${moveDistance}) scale(1.2)`;
+
+            setTimeout(() => {
+                arrow.style.transform = 'translateX(0) scale(1.2)';
+            }, 200);
+        }
+    }
+
+    updateCounter() {
+        const counter = document.getElementById('modalCounter');
+        if (counter) {
+            counter.textContent = `${this.currentImageIndex + 1} / ${this.images.length}`;
+
+            // Animacja licznika
+            counter.style.transform = 'scale(0.8)';
+            counter.style.opacity = '0.5';
+
+            setTimeout(() => {
+                counter.style.transform = 'scale(1)';
+                counter.style.opacity = '1';
+            }, 100);
+        }
+    }
+
+    updateProductInfo() {
+        const productInfo = document.getElementById('modalProductInfo');
+        const productName = document.getElementById('modalProductName');
+        const productPrice = document.getElementById('modalProductPrice');
+        const productLink = document.getElementById('modalProductLink');
+
+        if (this.productData && this.productData.name) {
+            if (productName) productName.textContent = this.productData.name;
+            if (productPrice) productPrice.textContent = this.productData.price;
+            if (productLink) productLink.href = this.productData.url;
+            if (productInfo) productInfo.style.display = 'block';
+        } else {
+            if (productInfo) productInfo.style.display = 'none';
+        }
+    }
+
+    createThumbnails() {
+        const thumbnailsContainer = document.getElementById('modalThumbnails');
+        if (!thumbnailsContainer || this.images.length <= 1) {
+            if (thumbnailsContainer) thumbnailsContainer.style.display = 'none';
+            return;
+        }
+
+        thumbnailsContainer.innerHTML = '';
+        thumbnailsContainer.style.display = 'flex';
+
+        this.images.forEach((image, index) => {
+            const thumb = document.createElement('img');
+            thumb.src = image.url;
+            thumb.alt = image.alt || `Miniaturka ${index + 1}`;
+            thumb.className = `modal-thumbnail ${index === this.currentImageIndex ? 'active' : ''}`;
+            thumb.addEventListener('click', () => this.goToImage(index));
+            thumbnailsContainer.appendChild(thumb);
+        });
+    }
+
+    goToImage(index, event = null) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        if (index < 0 || index >= this.images.length || this.isNavigating) return;
+
+        this.isNavigating = true;
+        this.currentImageIndex = index;
+        this.updateModalImage();
+        this.updateCounter();
+        this.updateThumbnailsActive();
+
+        setTimeout(() => {
+            this.isNavigating = false;
+        }, 300);
+    }
+
+    updateThumbnailsActive() {
+        const thumbnails = document.querySelectorAll('.modal-thumbnail');
+        thumbnails.forEach((thumb, index) => {
+            thumb.classList.toggle('active', index === this.currentImageIndex);
+        });
+    }
+
+    previousImage(event = null) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        if (this.images.length <= 1 || this.isNavigating) return;
+
+        const newIndex = this.currentImageIndex > 0
+            ? this.currentImageIndex - 1
+            : this.images.length - 1;
+
+        this.goToImage(newIndex);
+
+        // Efekt wizualny dla przycisku
+        const prevBtn = document.querySelector('.modal-nav-prev');
+        if (prevBtn) {
+            this.triggerNavigationEffect(prevBtn, 'left');
+        }
+    }
+
+    nextImage(event = null) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        if (this.images.length <= 1 || this.isNavigating) return;
+
+        const newIndex = this.currentImageIndex < this.images.length - 1
+            ? this.currentImageIndex + 1
+            : 0;
+
+        this.goToImage(newIndex);
+
+        // Efekt wizualny dla przycisku
+        const nextBtn = document.querySelector('.modal-nav-next');
+        if (nextBtn) {
+            this.triggerNavigationEffect(nextBtn, 'right');
+        }
+    }
+
+    startParallaxEffects() {
+        const parallaxLayers = document.querySelectorAll('.parallax-layer');
+        parallaxLayers.forEach((layer, index) => {
+            layer.style.animationDelay = `${index * 0.5}s`;
+        });
+    }
+
+    showLoading() {
+        const loader = document.getElementById('modalLoader');
+        if (loader) {
+            loader.style.display = 'flex';
+        }
+    }
+
+    hideLoading() {
+        const loader = document.getElementById('modalLoader');
+        if (loader) {
+            loader.style.display = 'none';
         }
     }
 
     closeModal() {
         const modal = document.getElementById('imageModal');
-        if (modal) {
+        if (!modal || !this.isModalOpen) return;
+
+        // Animacja zamknięcia
+        modal.classList.remove('active');
+
+        setTimeout(() => {
             modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = '';
             this.isModalOpen = false;
-        }
-    }
-
-    previousImage(event) {
-        if (event) event.stopPropagation();
-        if (this.images.length <= 1) return;
-
-        this.currentImageIndex = this.currentImageIndex > 0
-            ? this.currentImageIndex - 1
-            : this.images.length - 1;
-        this.updateModalImage();
-    }
-
-    nextImage(event) {
-        if (event) event.stopPropagation();
-        if (this.images.length <= 1) return;
-
-        this.currentImageIndex = this.currentImageIndex < this.images.length - 1
-            ? this.currentImageIndex + 1
-            : 0;
-        this.updateModalImage();
+            this.images = [];
+            this.productData = null;
+            this.currentImageIndex = 0;
+        }, 400);
     }
 }
 
@@ -190,7 +426,7 @@ let imageGalleryModal;
 function initImageGalleryModal() {
     if (!imageGalleryModal) {
         imageGalleryModal = new ImageGalleryModal();
-        console.log('Image Gallery Modal initialized');
+        console.log('Enhanced Image Gallery Modal initialized with parallax effects');
     }
 }
 
@@ -209,11 +445,15 @@ function closeImageModal() {
 }
 
 function modalPreviousImage(event) {
-    if (imageGalleryModal) imageGalleryModal.previousImage(event);
+    if (imageGalleryModal) {
+        imageGalleryModal.previousImage(event);
+    }
 }
 
 function modalNextImage(event) {
-    if (imageGalleryModal) imageGalleryModal.nextImage(event);
+    if (imageGalleryModal) {
+        imageGalleryModal.nextImage(event);
+    }
 }
 
 // Inicjalizuj po załadowaniu DOM
