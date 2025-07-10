@@ -41,3 +41,11 @@ Route::prefix('products')->name('products.')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::post('/logout', function () {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+
+    return redirect('/');
+})->name('logout');
