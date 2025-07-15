@@ -128,29 +128,28 @@ body::before {
     }
 }
 
-/* POPRAWKA - Większy max-width i lepsze proporcje */
+/* POPRAWKA - Kontener nawigacji */
 .nav-container {
     max-width: 1400px; /* Zwiększone z 1200px */
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 15px; /* Zmniejszone padding */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    gap: 2rem; /* Dodany gap między elementami */
+    gap: 1rem; /* Dodany gap między sekcjami */
 }
 
-/* POPRAWKA - Mniejsze logo, więcej miejsca na linki */
+/* POPRAWKA - Logo */
 .logo {
-    font-size: 1.6rem; /* Zmniejszone z 1.8rem */
+    font-size: 1.4rem; /* Zmniejszone z 1.6rem */
     font-weight: 800;
     color: var(--text-primary);
     text-decoration: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     text-shadow: 0 2px 8px var(--shadow-color);
-    white-space: nowrap; /* Zapobiega łamaniu tekstu */
-    flex-shrink: 0; /* Nie pozwala na zmniejszanie */
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .logo:hover {
@@ -178,11 +177,10 @@ body::before {
 /* POPRAWKA - Więcej miejsca dla nav-links */
 .nav-links {
     display: flex;
-    gap: 1.5rem; /* Zmniejszone z 2rem */
+    gap: 1rem; /* Zmniejszone z 1.5rem dla lepszego dopasowania */
     align-items: center;
-    flex: 1; /* Zajmuje dostępne miejsce */
-    justify-content: center; /* Wyśrodkowanie */
-    max-width: 600px; /* Maksymalna szerokość */
+    flex-shrink: 0; /* Zapobiega zmniejszaniu */
+    overflow: visible; /* Zapobiega ukrywaniu elementów */
 }
 
 .nav-link {
@@ -191,27 +189,26 @@ body::before {
     font-weight: 500;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
-    padding: 0.5rem 0.8rem; /* Zmniejszone z 1rem */
+    padding: 0.4rem 0.8rem;
     border-radius: 8px;
-    overflow: hidden;
-    white-space: nowrap; /* Zapobiega łamaniu tekstu */
-    font-size: 0.95rem; /* Nieco mniejsza czcionka */
-    flex-shrink: 0; /* Nie pozwala na zmniejszanie */
+    overflow: visible; /* ZMIENIONE z overflow: hidden dla liczników */
+    white-space: nowrap;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* Dodaj dodatkowy padding na prawej stronie dla liczników */
+    padding-right: 1.2rem;
 }
 
-.nav-link::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, var(--glow-color), transparent);
-    transition: left 0.5s ease;
+.nav-links .nav-link:last-child {
+    margin-right: 1rem; /* Dodatkowy margines dla ostatniego elementu */
 }
 
 .nav-link:hover::before {
     left: 100%;
+    opacity: 1; /* DODANE - pokaż tylko na hover */
 }
 
 .nav-link:hover {
@@ -220,30 +217,255 @@ body::before {
     text-shadow: 0 2px 8px var(--shadow-color);
 }
 
-/* POPRAWKA - Kompaktowe auth-buttons */
+/* POPRAWKA - Auth buttons */
 .auth-buttons {
     display: flex;
-    gap: 0.8rem; /* Zmniejszone z 1rem */
+    gap: 0.5rem; /* Zmniejszone z większego gap */
     align-items: center;
     flex-shrink: 0; /* Nie pozwala na zmniejszanie */
 }
 
-/* ENHANCED THEME TOGGLE BUTTON - Nieco mniejszy */
+/* User Dropdown Styles */
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.user-dropdown-trigger {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    color: var(--text-primary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 140px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.user-dropdown-trigger:hover {
+    background: var(--bg-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow-color);
+    border-color: var(--accent-primary);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-arrow {
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.user-dropdown.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    min-width: 280px;
+    box-shadow:
+        0 20px 60px var(--shadow-color),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow: hidden;
+}
+
+.user-dropdown.active .user-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.user-dropdown-header {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+}
+
+.user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-full-name {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-email {
+    opacity: 0.9;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.user-dropdown-item:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transform: translateX(5px);
+}
+
+.user-dropdown-item svg {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+    flex-shrink: 0;
+}
+
+.user-dropdown-item:hover svg {
+    opacity: 1;
+}
+
+.logout-item {
+    color: #ef4444 !important;
+    border-top: 1px solid var(--border-color);
+}
+
+.logout-item:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.user-dropdown-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 0.5rem 0;
+}
+
+/* Animation for dropdown */
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.user-dropdown.active .user-dropdown-menu {
+    animation: dropdownSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .user-dropdown-trigger {
+        padding: 0.5rem 0.8rem;
+        min-width: 120px;
+    }
+
+    .user-name {
+        font-size: 0.8rem;
+        max-width: 100px;
+    }
+
+    .user-dropdown-menu {
+        min-width: 260px;
+        right: -20px;
+    }
+
+    .user-dropdown-header {
+        padding: 1.2rem;
+    }
+
+    .user-avatar {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .user-dropdown-menu {
+        position: fixed;
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: calc(100vw - 20px);
+    }
+}
+
+/* POPRAWKA - Theme toggle */
 .theme-toggle {
     position: relative;
-    width: 65px; /* Zmniejszone z 70px */
-    height: 32px; /* Zmniejszone z 35px */
+    width: 55px; /* Zmniejszone z 65px */
+    height: 28px; /* Zmniejszone z 33px */
     background: var(--bg-card);
-    border-radius: 30px;
     border: 2px solid var(--border-color);
+    border-radius: 25px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
-    margin-left: 0.8rem; /* Zmniejszone z 1rem */
-    box-shadow:
-        0 4px 15px var(--shadow-color),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    flex-shrink: 0; /* Nie pozwala na zmniejszanie */
+    box-shadow: inset 0 2px 5px var(--shadow-color);
+    flex-shrink: 0;
+    margin-left: 0.5rem; /* Dodane odstępy */
 }
 
 .theme-toggle::before {
@@ -272,22 +494,22 @@ body::before {
 
 .theme-toggle-slider {
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 24px; /* Zmniejszone z 27px */
-    height: 24px; /* Zmniejszone z 27px */
+    top: 2px;
+    left: 2px;
+    width: 22px; /* Zmniejszone */
+    height: 22px; /* Zmniejszone */
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     border-radius: 50%;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow:
-        0 2px 8px var(--shadow-color),
-        0 0 0 0 var(--glow-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem; /* Zmniejszone z 0.9rem */
-    color: white;
-    animation: pulseGlow 3s ease-in-out infinite;
+    box-shadow: 0 3px 8px var(--shadow-color);
+}
+
+.theme-icon {
+    font-size: 0.7rem; /* Zmniejszone */
+    line-height: 1;
 }
 
 @keyframes pulseGlow {
@@ -353,9 +575,9 @@ body::before {
     50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
 }
 
-/* POPRAWKA - Kompaktowe przyciski */
+/* POPRAWKA - Przyciski */
 .btn {
-    padding: 0.6rem 1.2rem; /* Zmniejszone z 0.75rem 1.5rem */
+    padding: 0.5rem 0.8rem;
     border-radius: 12px;
     text-decoration: none;
     font-weight: 600;
@@ -367,10 +589,10 @@ body::before {
     text-align: center;
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem; /* Zmniejszone z 0.5rem */
-    font-size: 0.9rem; /* Zmniejszone z 0.95rem */
-    white-space: nowrap; /* Zapobiega łamaniu tekstu */
-    flex-shrink: 0; /* Nie pozwala na zmniejszanie */
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .btn::before {
@@ -382,10 +604,13 @@ body::before {
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     transition: left 0.5s ease;
+    opacity: 0; /* DODANE - ukryj domyślnie */
+    z-index: -1; /* DODANE - umieść pod tekstem */
 }
 
 .btn:hover::before {
     left: 100%;
+    opacity: 1; /* DODANE - pokaż tylko na hover */
 }
 
 .btn-primary {
@@ -413,58 +638,63 @@ body::before {
     box-shadow: 0 6px 20px var(--shadow-color);
 }
 
-/* RESPONSIVE DESIGN - Zachowaj czytelność */
+/* RESPONSIVE DESIGN - Lepsze zarządzanie przestrzenią */
 @media (max-width: 1200px) {
     .nav-container {
         max-width: 100%;
-        padding: 0 15px;
-        gap: 1.5rem;
+        padding: 0 10px;
+        gap: 0.8rem;
     }
 
     .nav-links {
-        gap: 1.2rem;
+        gap: 0.8rem;
     }
 
     .nav-link {
-        font-size: 0.9rem;
-        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+    }
+
+    .btn {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.75rem;
     }
 }
 
 @media (max-width: 992px) {
     .nav-container {
-        gap: 1rem;
+        gap: 0.5rem;
+        padding: 0 8px;
     }
 
     .logo {
-        font-size: 1.4rem;
+        font-size: 1.2rem;
     }
 
     .nav-links {
-        gap: 1rem;
+        gap: 0.6rem;
     }
 
     .nav-link {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         padding: 0.3rem 0.5rem;
     }
 
     .btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.7rem;
     }
 
     .theme-toggle {
-        width: 60px;
-        height: 30px;
-        margin-left: 0.5rem;
+        width: 50px;
+        height: 25px;
     }
 
     .theme-toggle-slider {
-        width: 22px;
-        height: 22px;
-        font-size: 0.7rem;
+        width: 19px;
+        height: 19px;
     }
+}
 
     [data-theme="dark"] .theme-toggle-slider {
         transform: translateX(30px);
@@ -473,12 +703,12 @@ body::before {
     [data-theme="dark"] .theme-toggle:hover .theme-toggle-slider {
         transform: scale(1.1) translateX(30px);
     }
-}
 
 @media (max-width: 768px) {
     .nav-links {
-        display: none; /* Ukryj linki na mobile */
+        gap: 0.4rem;
     }
+
 
     .nav-container {
         gap: 0.5rem;
@@ -952,6 +1182,8 @@ body::before {
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     transition: left 0.5s ease;
+    opacity: 0; /* DODANE - ukryj domyślnie */
+    z-index: -1; /* DODANE - umieść pod tekstem */
 }
 
 .btn-add-to-cart:hover::before,
@@ -959,6 +1191,7 @@ body::before {
 .btn-wishlist:hover::before,
 .btn-notify:hover::before {
     left: 100%;
+    opacity: 1; /* DODANE - pokaż tylko na hover */
 }
 
 .btn-add-to-cart {
@@ -1104,23 +1337,55 @@ body::before {
     font-weight: 700;
 }
 
-/* DODANE STYLE DLA LICZNIKÓW KOSZYKA I WISHLIST */
-.cart-count,
-.wishlist-count {
-    background: linear-gradient(135deg, var(--error), #dc2626);
+/* POPRAWKA - Większe liczniki koszyka i wishlist */
+.wishlist-count,
+.cart-count {
+    position: absolute;
+    top: -10px; /* Zwiększone z -8px */
+    right: -10px; /* Zwiększone z -8px */
+    background: #e74c3c;
     color: white;
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 10px;
-    margin-left: 0.3rem;
-    font-weight: 700;
-    min-width: 18px;
-    height: 18px;
+    border-radius: 50%;
+    width: 22px; /* Zwiększone z 18px */
+    height: 22px; /* Zwiększone z 18px */
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: pulse 2s infinite;
+    font-size: 0.75rem; /* Zwiększone z 0.65rem */
+    font-weight: 700;
+    border: 2px solid var(--bg-primary);
+    z-index: 15; /* Zwiększone z 10 */
+    min-width: 22px; /* Zapewnia minimalną szerokość */
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    animation: pulse 2s ease-in-out infinite;
+}
+/* Dla liczb powyżej 99 - skróć do 99+ */
+.wishlist-count:after,
+.cart-count:after {
+    content: attr(data-count);
+}
+
+/* Poprawka dla responsive design */
+@media (max-width: 992px) {
+    .wishlist-count,
+    .cart-count {
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+        top: -8px;
+        right: -8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .wishlist-count,
+    .cart-count {
+        width: 18px;
+        height: 18px;
+        font-size: 0.65rem;
+        top: -6px;
+        right: -6px;
+    }
 }
 
 @keyframes pulse {

@@ -57,17 +57,75 @@
 
             <div class="auth-buttons">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="btn btn-secondary">Panel</a>
-                    <!-- DODANY PRZYCISK ZAMÓWIENIA -->
-                    <a href="{{ route('checkout.orders') }}" class="btn btn-outline">📋 Zamówienia</a>
-
-                    <!-- Logout form - NAPRAWIONY -->
-                    <form method="POST" action="{{ route('logout') }}" style="display: inline;">
-                        @csrf
-                        <button type="submit" class="btn btn-primary" onclick="this.innerHTML='⏳ Wylogowywanie...'; this.disabled=true;">
-                            Wyloguj
+                    <!-- User Dropdown Menu -->
+                    <div class="user-dropdown">
+                        <button class="user-dropdown-trigger" onclick="toggleUserDropdown()">
+                            <div class="user-info">
+                                <span class="user-name">{{ auth()->user()->first_name ?? auth()->user()->name ?? auth()->user()->email }}</span>
+                                <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 9l6 6 6-6"/>
+                                </svg>
+                            </div>
                         </button>
-                    </form>
+
+                        <div class="user-dropdown-menu" id="userDropdownMenu">
+                            <div class="user-dropdown-header">
+                                <div class="user-avatar">{{ strtoupper(substr(auth()->user()->first_name ?? auth()->user()->name ?? auth()->user()->email, 0, 1)) }}</div>
+                                <div class="user-details">
+                                    <div class="user-full-name">{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</div>
+                                    <div class="user-email">{{ auth()->user()->email }}</div>
+                                </div>
+                            </div>
+
+                            <div class="user-dropdown-divider"></div>
+
+                            <a href="{{ route('dashboard') }}" class="user-dropdown-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                    <polyline points="9,22 9,12 15,12 15,22"/>
+                                </svg>
+                                Panel użytkownika
+                            </a>
+
+                            <a href="{{ route('checkout.orders') }}" class="user-dropdown-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 1 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/>
+                                    <polyline points="16,10 16,8 20,8 20,12 16,12"/>
+                                </svg>
+                                Moje zamówienia
+                            </a>
+
+                            <a href="#" class="user-dropdown-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                Ustawienia profilu
+                            </a>
+
+                            <a href="#" class="user-dropdown-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                                </svg>
+                                Ustawienia konta
+                            </a>
+
+                            <div class="user-dropdown-divider"></div>
+
+                            <form method="POST" action="{{ route('logout') }}" style="display: contents;">
+                                @csrf
+                                <button type="submit" class="user-dropdown-item logout-item" onclick="this.innerHTML='⏳ Wylogowywanie...'; this.disabled=true;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                        <polyline points="16,17 21,12 16,7"/>
+                                        <path d="M21 12H9"/>
+                                    </svg>
+                                    Wyloguj się
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 @else
                     <a href="{{ route('login') }}" class="btn btn-secondary">Zaloguj</a>
                     <a href="{{ route('register') }}" class="btn btn-primary">Zarejestruj</a>
@@ -383,6 +441,75 @@
         `;
         document.head.appendChild(notificationStyles);
         @endauth
+
+        // User Dropdown functionality
+        function toggleUserDropdown() {
+            console.log('toggleUserDropdown called'); // Debug
+            const dropdown = document.querySelector('.user-dropdown');
+            const menu = document.getElementById('userDropdownMenu');
+
+            console.log('Dropdown element:', dropdown); // Debug
+            console.log('Menu element:', menu); // Debug
+
+            if (dropdown && menu) {
+                dropdown.classList.toggle('active');
+                console.log('Dropdown active:', dropdown.classList.contains('active')); // Debug
+
+                // Close when clicking outside
+                if (dropdown.classList.contains('active')) {
+                    setTimeout(() => {
+                        document.addEventListener('click', closeDropdownOutside);
+                    }, 0);
+                } else {
+                    document.removeEventListener('click', closeDropdownOutside);
+                }
+            }
+        }
+
+        function closeDropdownOutside(event) {
+            const dropdown = document.querySelector('.user-dropdown');
+
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+                document.removeEventListener('click', closeDropdownOutside);
+            }
+        }
+
+        // Close dropdown on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const dropdown = document.querySelector('.user-dropdown');
+                if (dropdown && dropdown.classList.contains('active')) {
+                    dropdown.classList.remove('active');
+                    document.removeEventListener('click', closeDropdownOutside);
+                }
+            }
+        });
+
+        // Theme management with enhanced animations
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            // Smooth transition with enhanced animation
+            document.body.style.transition = 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // Enhanced theme icon animation
+            updateThemeIcon(newTheme);
+
+            // Add magical sparkle effect
+            createEnhancedSparkles();
+
+            // Remove transition after animation
+            setTimeout(() => {
+                document.body.style.transition = '';
+            }, 500);
+        }
+
     </script>
 
     <!-- Enhanced Scripts -->
