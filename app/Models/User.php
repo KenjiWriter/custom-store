@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -84,7 +85,18 @@ class User extends Authenticatable
      */
     public function addToCart($productId, $quantity = 1)
     {
-        return Cart::addToCart($this->id, $productId, $quantity);
+        // Pobierz produkt
+        $product = Product::findOrFail($productId);
+
+        // Dodaj lub zaktualizuj produkt w koszyku
+        $cartItem = $this->cartItems()->updateOrCreate(
+            ['product_id' => $productId],
+            [
+                'quantity' => DB::raw("quantity + {$quantity}"),
+            ]
+        );
+
+        return $cartItem;
     }
 
     /**

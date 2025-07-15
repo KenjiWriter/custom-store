@@ -222,6 +222,7 @@ class ImageGalleryModal {
     }
 
     addNavigationEffects(prevBtn, nextBtn) {
+ 
         // Usuwaj poprzednie listenery
         prevBtn.removeEventListener('mouseenter', this.prevHoverEffect);
         nextBtn.removeEventListener('mouseenter', this.nextHoverEffect);

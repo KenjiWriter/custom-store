@@ -14,11 +14,9 @@ class Cart extends Model
         'user_id',
         'product_id',
         'quantity',
-        'price'
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
         'quantity' => 'integer'
     ];
 
@@ -36,12 +34,12 @@ class Cart extends Model
     // Akcesory
     public function getTotalPriceAttribute()
     {
-        return $this->quantity * $this->price;
+        return $this->quantity * $this->product->price; // Pobierz cenę z relacji produktu
     }
 
     public function getFormattedTotalPriceAttribute()
     {
-        return number_format($this->total_price, 2) . ' zł';
+        return number_format($this->total_price, 2) . ' zł'; // Sformatuj cenę
     }
 
     // Statyczne metody
@@ -74,7 +72,6 @@ class Cart extends Model
             'user_id' => $userId,
             'product_id' => $productId,
             'quantity' => $quantity,
-            'price' => $product->price
         ]);
     }
 
@@ -87,12 +84,16 @@ class Cart extends Model
 
     public static function getUserCartTotal($userId)
     {
-        return self::where('user_id', $userId)->sum(\DB::raw('quantity * price'));
+        return self::with('product')
+            ->where('user_id', $userId)
+            ->get()
+            ->sum(function ($cartItem) {
+                return $cartItem->quantity * $cartItem->product->price; // Oblicz sumę na podstawie ceny produktu
+            });
     }
-
     public static function getUserCartCount($userId)
     {
-        return self::where('user_id', $userId)->sum('quantity');
+        return self::where('user_id', $userId)->sum('quantity'); // Liczba produktów w koszyku
     }
 
     public static function clearUserCart($userId)

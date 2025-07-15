@@ -7,6 +7,15 @@
 <link rel="stylesheet" href="{{ asset('css/image-gallery-modal.css') }}">
 @endpush
 
+@push('scripts')
+<script src="{{ asset('js/cart.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initCart(); // Inicjalizuj CartManager na stronie produktu
+    });
+</script>
+@endpush
+
 @section('content')
 <div class="container">
     <!-- Breadcrumb -->
@@ -88,10 +97,14 @@
             <div class="product-actions">
                 @auth
                     @if($product->isInStock())
-                        <button class="btn-add-to-cart" onclick="addToCart({{ $product->id }})">
+                        <button class="btn-add-to-cart" 
+                                data-product-id="{{ $product->id }}" 
+                                data-original-text="🛒 Dodaj do koszyka">
                             🛒 Dodaj do koszyka
                         </button>
-                        <button class="btn-buy-now" onclick="buyNow({{ $product->id }})">
+                        <button class="btn-buy-now" 
+                                data-product-id="{{ $product->id }}" 
+                                data-original-text="⚡ Kup teraz">
                             ⚡ Kup teraz
                         </button>
                     @else
@@ -265,29 +278,6 @@ class ProductGallery {
         
         const newIndex = this.currentIndex < this.images.length - 1 ? this.currentIndex + 1 : 0;
         this.changeMainImage(newIndex);
-    }
-}
-
-// Funkcje akcji produktu - TYLKO dla zalogowanych
-function addToCart(productId) {
-    alert('Produkt został dodany do koszyka!');
-    console.log('Dodano do koszyka produkt ID:', productId);
-    
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '✅ Dodano!';
-    button.style.background = '#27ae60';
-    
-    setTimeout(() => {
-        button.innerHTML = originalText;
-        button.style.background = '';
-    }, 2000);
-}
-
-function buyNow(productId) {
-    if (confirm('Czy chcesz przejść do kasy?')) {
-        console.log('Kup teraz produkt ID:', productId);
-        alert('Przekierowywanie do kasy...');
     }
 }
 

@@ -20,6 +20,10 @@
     <link rel="stylesheet" href="{{ asset('css/cart-modal.css') }}">
 
     @stack('styles')
+
+    @auth
+        <script src="{{ asset('js/cart.js') }}"></script>
+    @endauth
 </head>
 <body>
     <!-- Nawigacja -->
@@ -382,9 +386,6 @@
     </script>
 
     <!-- Enhanced Scripts -->
-    @auth
-        <script src="{{ asset('js/cart.js') }}"></script>
-    @endauth
     <script src="{{ asset('js/auth-modal.js') }}"></script>
     <script src="{{ asset('js/image-gallery-modal.js') }}"></script>
 

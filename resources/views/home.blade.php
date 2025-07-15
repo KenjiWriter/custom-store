@@ -55,6 +55,4 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/image-gallery-modal.js') }}"></script>
-</script>
 @endpush

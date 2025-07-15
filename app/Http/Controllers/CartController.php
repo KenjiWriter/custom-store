@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
 
     /**
      * Pokaż zawartość koszyka
@@ -44,7 +40,7 @@ class CartController extends Controller
             $quantity = $request->quantity ?? 1;
             $product = Product::findOrFail($request->product_id);
 
-            // Sprawdź dostępność
+            // Sprawdź dostępność produktu
             if ($product->stock_quantity < $quantity) {
                 return response()->json([
                     'success' => false,
@@ -52,7 +48,32 @@ class CartController extends Controller
                 ], 400);
             }
 
-            $cartItem = Auth::user()->addToCart($request->product_id, $quantity);
+            // Pobierz istniejący rekord koszyka lub utwórz nowy
+            $cartItem = Cart::where('user_id', Auth::id())
+                            ->where('product_id', $product->id)
+                            ->first();
+
+            if ($cartItem) {
+                // Zaktualizuj ilość
+                $newQuantity = $cartItem->quantity + $quantity;
+
+                // Sprawdź czy nowa ilość nie przekracza stanu magazynowego
+                if ($product->stock_quantity < $newQuantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Niewystarczająca ilość produktu w magazynie. Dostępne: {$product->stock_quantity} szt."
+                    ], 400);
+                }
+
+                $cartItem->update(['quantity' => $newQuantity]);
+            } else {
+                // Utwórz nowy rekord koszyka
+                $cartItem = Cart::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -60,7 +81,6 @@ class CartController extends Controller
                 'cart_count' => Auth::user()->cart_count,
                 'cart_total' => number_format(Auth::user()->cart_total, 2) . ' zł'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -80,8 +100,8 @@ class CartController extends Controller
             ]);
 
             $cartItem = Cart::where('user_id', Auth::id())
-                           ->where('id', $id)
-                           ->firstOrFail();
+                        ->where('id', $id)
+                        ->firstOrFail();
 
             // Sprawdź dostępność
             if ($cartItem->product->stock_quantity < $request->quantity) {
