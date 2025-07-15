@@ -1,4 +1,5 @@
 <?php
+/* filepath: c:\xampp\htdocs\custom-store\app\Http\Controllers\ProductController.php */
 
 namespace App\Http\Controllers;
 
@@ -50,5 +51,34 @@ class ProductController extends Controller
                 'url' => route('products.show', $product->id)
             ]
         ]);
+    }
+
+    /**
+     * Sprawdź dostępność produktu
+     */
+    public function checkStock(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'quantity' => 'required|integer|min:1'
+            ]);
+
+            $product = Product::findOrFail($id);
+            $requestedQuantity = $request->quantity;
+
+            return response()->json([
+                'available' => $product->stock_quantity >= $requestedQuantity,
+                'stock_quantity' => $product->stock_quantity,
+                'message' => $product->stock_quantity >= $requestedQuantity
+                    ? 'Produkt dostępny'
+                    : "Niewystarczająca ilość w magazynie. Dostępne: {$product->stock_quantity} szt."
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Błąd podczas sprawdzania dostępności'
+            ], 500);
+        }
     }
 }

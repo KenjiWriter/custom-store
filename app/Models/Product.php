@@ -113,10 +113,14 @@ class Product extends Model
 
             if ($this->isInStock()) {
                 $authButtonsHtml = '
-                    <button class="btn-add-to-cart" onclick="addToCart(' . $this->id . ')">
+                    <button class="btn-add-to-cart"
+                            data-product-id="' . $this->id . '"
+                            data-original-text="🛒 Dodaj do koszyka">
                         🛒 Dodaj do koszyka
                     </button>
-                    <button class="btn-buy-now" onclick="buyNow(' . $this->id . ')">
+                    <button class="btn-buy-now"
+                            data-product-id="' . $this->id . '"
+                            data-original-text="⚡ Kup teraz">
                         ⚡ Kup teraz
                     </button>';
             } else {
@@ -156,15 +160,16 @@ class Product extends Model
             } else {
                 $authButtonsHtml = '
                     <button class="requires-auth btn-notify"
-                            data-action="notify-availability"
+                            data-action="notify"
                             data-product-id="' . $this->id . '"
                             data-product-name="' . htmlspecialchars($this->name) . '">
                         🔔 Powiadom o dostępności
                     </button>';
             }
+
             $authButtonsHtml .= '
                 <button class="requires-auth btn-wishlist"
-                        data-action="add-to-favorites"
+                        data-action="add-to-wishlist"
                         data-product-id="' . $this->id . '"
                         data-product-name="' . htmlspecialchars($this->name) . '">
                     ❤️ Dodaj do ulubionych

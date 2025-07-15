@@ -1104,6 +1104,48 @@ body::before {
     font-weight: 700;
 }
 
+/* DODANE STYLE DLA LICZNIKÓW KOSZYKA I WISHLIST */
+.cart-count,
+.wishlist-count {
+    background: linear-gradient(135deg, var(--error), #dc2626);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    margin-left: 0.3rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.6);
+    }
+}
+
+.cart-trigger {
+    background: none !important;
+    border: none !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.cart-trigger:hover {
+    background: var(--bg-secondary) !important;
+}
+
 /* Footer styles - Ultra Modern */
 .footer {
     background: var(--bg-secondary);

@@ -1,4 +1,5 @@
 <?php
+/* filepath: c:\xampp\htdocs\custom-store\app\Models\User.php */
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -44,7 +45,57 @@ class User extends Authenticatable
         ];
     }
 
-    // DODANE RELACJE DLA WISHLIST
+    // RELACJE DO KOSZYKA I ZAMÓWIEŃ
+
+    /**
+     * Relacja do koszyka
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(Cart::class);
+    }
+
+    /**
+     * Relacja do zamówień
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Pobierz liczbę produktów w koszyku
+     */
+    public function getCartCountAttribute()
+    {
+        return Cart::getUserCartCount($this->id);
+    }
+
+    /**
+     * Pobierz wartość koszyka
+     */
+    public function getCartTotalAttribute()
+    {
+        return Cart::getUserCartTotal($this->id);
+    }
+
+    /**
+     * Dodaj produkt do koszyka
+     */
+    public function addToCart($productId, $quantity = 1)
+    {
+        return Cart::addToCart($this->id, $productId, $quantity);
+    }
+
+    /**
+     * Pobierz produkty z koszyka
+     */
+    public function getCartItems()
+    {
+        return Cart::getUserCartItems($this->id);
+    }
+
+    // RELACJE DO WISHLIST
 
     /**
      * Relacja do ulubionych produktów

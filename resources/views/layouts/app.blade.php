@@ -16,6 +16,8 @@
 
     <!-- Auth Modal CSS -->
     <link rel="stylesheet" href="{{ asset('css/auth-modal.css') }}">
+    <!-- DODANE - Cart Modal CSS -->
+    <link rel="stylesheet" href="{{ asset('css/cart-modal.css') }}">
 
     @stack('styles')
 </head>
@@ -28,27 +30,40 @@
             </a>
 
             <div class="nav-links">
-                <a href="{{ route('home') }}" class="nav-link">Strona główna</a>
-                <a href="#" class="nav-link">Produkty</a>
-                <a href="#" class="nav-link">Kategorie</a>
-                <a href="#" class="nav-link">O nas</a>
-                <a href="#" class="nav-link">Kontakt</a>
+                <a href="{{ route('home') }}" class="nav-link">🏠 Strona główna</a>
+                <a href="#" class="nav-link">📦 Produkty</a>
+                <a href="#" class="nav-link">🏷️ Kategorie</a>
+                @auth
+                    <a href="{{ route('wishlist.index') }}" class="nav-link">
+                        💖 Ulubione
+                        <span id="wishlistCounter" class="wishlist-count" style="display: {{ auth()->user()->wishlist_count > 0 ? 'flex' : 'none' }};">
+                            {{ auth()->user()->wishlist_count }}
+                        </span>
+                    </a>
+                    <!-- POPRAWIONY KOSZYK - używa class zamiast onclick -->
+                    <button class="nav-link cart-trigger">
+                        🛒 Koszyk
+                        <span class="cart-count" style="display: {{ auth()->user()->cart_count > 0 ? 'flex' : 'none' }};">
+                            {{ auth()->user()->cart_count }}
+                        </span>
+                    </button>
+                @endauth
+                <a href="#" class="nav-link">ℹ️ O nas</a>
             </div>
 
             <div class="auth-buttons">
                 @auth
-                    <!-- DODANY LINK DO ULUBIONYCH -->
-                    <a href="{{ route('wishlist.index') }}" class="btn btn-secondary wishlist-btn">
-                        💖 Ulubione
-                        @if(auth()->user()->wishlist_count > 0)
-                            <span class="wishlist-counter" id="wishlistCounter">{{ auth()->user()->wishlist_count }}</span>
-                        @else
-                            <span class="wishlist-counter" id="wishlistCounter" style="display: none;">0</span>
-                        @endif
-                    </a>
                     <a href="{{ route('dashboard') }}" class="btn btn-secondary">Panel</a>
-                    <!-- POPRAWKA - Użyj JavaScript zamiast form POST -->
-                    <button type="button" class="btn btn-primary" onclick="logoutUser()">Wyloguj</button>
+                    <!-- DODANY PRZYCISK ZAMÓWIENIA -->
+                    <a href="{{ route('checkout.orders') }}" class="btn btn-outline">📋 Zamówienia</a>
+
+                    <!-- Logout form - NAPRAWIONY -->
+                    <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-primary" onclick="this.innerHTML='⏳ Wylogowywanie...'; this.disabled=true;">
+                            Wyloguj
+                        </button>
+                    </form>
                 @else
                     <a href="{{ route('login') }}" class="btn btn-secondary">Zaloguj</a>
                     <a href="{{ route('register') }}" class="btn btn-primary">Zarejestruj</a>
@@ -88,6 +103,7 @@
                     <a href="#">🏷️ Kategorie</a>
                     @auth
                         <a href="{{ route('wishlist.index') }}">💖 Moje ulubione</a>
+                        <a href="{{ route('checkout.orders') }}">📋 Moje zamówienia</a>
                     @endauth
                     <a href="#">ℹ️ O nas</a>
                     <a href="#">📞 Kontakt</a>
@@ -135,6 +151,11 @@
         </div>
     </footer>
 
+    <!-- Cart Modal - tylko dla zalogowanych -->
+    @auth
+        <x-cart-modal />
+    @endauth
+
     <!-- Auth Modal - tylko dla niezalogowanych -->
     @guest
         <x-auth-modal />
@@ -145,41 +166,6 @@
 
     <!-- Enhanced Theme Toggle Script -->
     <script>
-        // DODANA FUNKCJA LOGOUT
-        async function logoutUser() {
-            try {
-                const response = await fetch('/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                });
-
-                if (response.ok || response.redirected) {
-                    // Przeładuj stronę lub przekieruj
-                    window.location.href = '/';
-                } else {
-                    console.error('Błąd wylogowania');
-                }
-            } catch (error) {
-                console.error('Błąd wylogowania:', error);
-                // Fallback - użyj zwykłego formularza
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/logout';
-
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                form.appendChild(csrfInput);
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-
         // Theme management with enhanced animations
         function toggleTheme() {
             const html = document.documentElement;
@@ -395,7 +381,10 @@
         @endauth
     </script>
 
-    <!-- Scripts -->
+    <!-- Enhanced Scripts -->
+    @auth
+        <script src="{{ asset('js/cart.js') }}"></script>
+    @endauth
     <script src="{{ asset('js/auth-modal.js') }}"></script>
     <script src="{{ asset('js/image-gallery-modal.js') }}"></script>
 
