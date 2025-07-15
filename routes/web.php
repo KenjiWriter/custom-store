@@ -48,15 +48,18 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/clear/all', [CartController::class, 'clear'])->name('clear');
     });
 
-    // Checkout i zamówienia
-    Route::prefix('checkout')->name('checkout.')->group(function () {
-        Route::get('/', [CheckoutController::class, 'index'])->name('index');
-        Route::post('/order', [CheckoutController::class, 'processOrder'])->name('process-order');
-        Route::get('/buy-now', [CheckoutController::class, 'buyNow'])->name('buy-now');
-        Route::post('/buy-now', [CheckoutController::class, 'processBuyNow'])->name('process-buy-now');
-        Route::get('/success/{orderNumber}', [CheckoutController::class, 'success'])->name('success');
-        Route::get('/orders', [CheckoutController::class, 'orders'])->name('orders');
-    });
+    // Checkout i zamówienia - tylko dla zalogowanych
+Route::middleware(['auth'])->prefix('checkout')->name('checkout.')->group(function () {
+    Route::get('/', [CheckoutController::class, 'index'])->name('index');
+    Route::post('/process', [CheckoutController::class, 'processOrder'])->name('process');
+    Route::get('/buy-now', [CheckoutController::class, 'buyNow'])->name('buy-now');
+    Route::post('/buy-now', [CheckoutController::class, 'processBuyNow'])->name('process-buy-now');
+    Route::get('/success/{orderNumber}', [CheckoutController::class, 'success'])->name('success');
+
+    // NOWA TRASA - Historia zamówień
+    Route::get('/orders', [CheckoutController::class, 'orders'])->name('orders');
+    Route::get('/orders/{order}', [CheckoutController::class, 'orderDetails'])->name('order.details');
+});
 });
 
 // Produkty - dostępne dla wszystkich

@@ -1,10 +1,10 @@
 <?php
-/* filepath: c:\xampp\htdocs\custom-store\app\Models\Order.php */
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Cart;
+use App\Models\OrderItem;
 
 class Order extends Model
 {
@@ -26,13 +26,16 @@ class Order extends Model
         'postal_code',
         'country',
         'payment_data',
-        'payment_date'
+        'payment_date',
+        'notes'
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
         'payment_data' => 'array',
-        'payment_date' => 'datetime'
+        'payment_date' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     // Relacje
@@ -47,7 +50,7 @@ class Order extends Model
     }
 
     // Akcesory
-    public function getFormattedTotalAttribute()
+    public function getFormattedTotalAmountAttribute()
     {
         return number_format($this->total_amount, 2) . ' zł';
     }
@@ -60,6 +63,38 @@ class Order extends Model
     public function getFullAddressAttribute()
     {
         return $this->address . ', ' . $this->postal_code . ' ' . $this->city . ', ' . $this->country;
+    }
+
+    public function getStatusBadgeAttribute()
+    {
+        $badges = [
+            'pending' => '<span class="status-badge status-pending">⏳ Oczekuje</span>',
+            'confirmed' => '<span class="status-badge status-confirmed">✅ Potwierdzone</span>',
+            'processing' => '<span class="status-badge status-processing">📦 Przetwarzane</span>',
+            'shipped' => '<span class="status-badge status-shipped">🚚 Wysłane</span>',
+            'delivered' => '<span class="status-badge status-delivered">📮 Dostarczone</span>',
+            'cancelled' => '<span class="status-badge status-cancelled">❌ Anulowane</span>',
+            'returned' => '<span class="status-badge status-returned">↩️ Zwrócone</span>'
+        ];
+
+        return $badges[$this->status] ?? '<span class="status-badge status-unknown">❓ Nieznany</span>';
+    }
+
+    public function getPaymentStatusBadgeAttribute()
+    {
+        $badges = [
+            'pending' => '<span class="payment-badge payment-pending">⏳ Oczekuje</span>',
+            'paid' => '<span class="payment-badge payment-paid">💳 Opłacone</span>',
+            'failed' => '<span class="payment-badge payment-failed">❌ Nieudane</span>',
+            'refunded' => '<span class="payment-badge payment-refunded">💰 Zwrócone</span>'
+        ];
+
+        return $badges[$this->payment_status] ?? '<span class="payment-badge payment-unknown">❓ Nieznany</span>';
+    }
+
+    public function getTotalItemsCountAttribute()
+    {
+        return $this->items->sum('quantity');
     }
 
     // Statyczne metody
@@ -110,7 +145,7 @@ class Order extends Model
                 'order_id' => $order->id,
                 'product_id' => $item->product_id,
                 'quantity' => $item->quantity,
-                'price' => $item->price
+                'price' => $item->product->price
             ]);
 
             // Zmniejsz stan magazynowy
