@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Cart;
-use App\Models\OrderItem;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
@@ -13,38 +15,34 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'user_id',
-        'status',
+        'address_id',
         'total_amount',
+        'status',
         'payment_method',
         'payment_status',
-        'first_name',
-        'last_name',
-        'email',
-        'phone',
-        'address',
-        'city',
-        'postal_code',
-        'country',
-        'payment_data',
         'payment_date',
         'notes'
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
-        'payment_data' => 'array',
         'payment_date' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
 
     // Relacje
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function items()
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(UserAddress::class, 'address_id');
+    }
+
+    public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
@@ -52,49 +50,96 @@ class Order extends Model
     // Akcesory
     public function getFormattedTotalAmountAttribute()
     {
-        return number_format($this->total_amount, 2) . ' zł';
+        return number_format($this->total_amount, 2, ',', ' ') . ' zł';
     }
 
     public function getFullNameAttribute()
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->address ? $this->address->full_name : 'Brak danych';
     }
 
     public function getFullAddressAttribute()
     {
-        return $this->address . ', ' . $this->postal_code . ' ' . $this->city . ', ' . $this->country;
+        return $this->address ? $this->address->full_address : 'Brak danych';
     }
 
     public function getStatusBadgeAttribute()
     {
-        $badges = [
-            'pending' => '<span class="status-badge status-pending">⏳ Oczekuje</span>',
-            'confirmed' => '<span class="status-badge status-confirmed">✅ Potwierdzone</span>',
-            'processing' => '<span class="status-badge status-processing">📦 Przetwarzane</span>',
-            'shipped' => '<span class="status-badge status-shipped">🚚 Wysłane</span>',
-            'delivered' => '<span class="status-badge status-delivered">📮 Dostarczone</span>',
-            'cancelled' => '<span class="status-badge status-cancelled">❌ Anulowane</span>',
-            'returned' => '<span class="status-badge status-returned">↩️ Zwrócone</span>'
+        $statuses = [
+            'pending' => ['text' => 'Oczekujące', 'class' => 'status-pending', 'icon' => '⏳'],
+            'confirmed' => ['text' => 'Potwierdzone', 'class' => 'status-confirmed', 'icon' => '✅'],
+            'processing' => ['text' => 'W realizacji', 'class' => 'status-processing', 'icon' => '🔄'],
+            'shipped' => ['text' => 'Wysłane', 'class' => 'status-shipped', 'icon' => '🚚'],
+            'delivered' => ['text' => 'Dostarczone', 'class' => 'status-delivered', 'icon' => '📦'],
+            'cancelled' => ['text' => 'Anulowane', 'class' => 'status-cancelled', 'icon' => '❌']
         ];
 
-        return $badges[$this->status] ?? '<span class="status-badge status-unknown">❓ Nieznany</span>';
+        $status = $statuses[$this->status] ?? $statuses['pending'];
+
+        return '<span class="badge ' . $status['class'] . '">' .
+               $status['icon'] . ' ' . $status['text'] .
+               '</span>';
     }
 
     public function getPaymentStatusBadgeAttribute()
     {
-        $badges = [
-            'pending' => '<span class="payment-badge payment-pending">⏳ Oczekuje</span>',
-            'paid' => '<span class="payment-badge payment-paid">💳 Opłacone</span>',
-            'failed' => '<span class="payment-badge payment-failed">❌ Nieudane</span>',
-            'refunded' => '<span class="payment-badge payment-refunded">💰 Zwrócone</span>'
+        $statuses = [
+            'pending' => ['text' => 'Oczekuje płatności', 'class' => 'payment-pending', 'icon' => '💳'],
+            'paid' => ['text' => 'Opłacone', 'class' => 'payment-paid', 'icon' => '✅'],
+            'failed' => ['text' => 'Nieudana', 'class' => 'payment-failed', 'icon' => '❌'],
+            'refunded' => ['text' => 'Zwrócone', 'class' => 'payment-refunded', 'icon' => '↩️']
         ];
 
-        return $badges[$this->payment_status] ?? '<span class="payment-badge payment-unknown">❓ Nieznany</span>';
+        $status = $statuses[$this->payment_status] ?? $statuses['pending'];
+
+        return '<span class="badge ' . $status['class'] . '">' .
+               $status['icon'] . ' ' . $status['text'] .
+               '</span>';
+    }
+
+    public function getPaymentMethodNameAttribute()
+    {
+        $methods = [
+            'cash_on_delivery' => 'Płatność przy odbiorze',
+            'card' => 'Karta płatnicza',
+            'blik' => 'BLIK',
+            'transfer' => 'Przelew bankowy',
+            'paypal' => 'PayPal'
+        ];
+
+        return $methods[$this->payment_method] ?? ucfirst($this->payment_method);
     }
 
     public function getTotalItemsCountAttribute()
     {
         return $this->items->sum('quantity');
+    }
+
+    public function getTotalProductsCountAttribute()
+    {
+        return $this->items->count();
+    }
+
+    public function getCanBeCancelledAttribute()
+    {
+        return in_array($this->status, ['pending', 'confirmed']) &&
+               $this->created_at->diffInHours(now()) < 24;
+    }
+
+    public function getHasInvoiceAttribute()
+    {
+        return $this->payment_status === 'paid';
+    }
+
+    public function getEstimatedDeliveryDateAttribute()
+    {
+        $days = match($this->payment_method) {
+            'cash_on_delivery' => 3,
+            'card', 'blik', 'transfer', 'paypal' => 2,
+            default => 3
+        };
+
+        return $this->created_at->addDays($days);
     }
 
     // Statyczne metody
@@ -107,54 +152,192 @@ class Order extends Model
         return $orderNumber;
     }
 
-    public static function createFromCart($userId, $addressData, $paymentMethod = 'transfer')
+    public static function createFromCart($userId, $customerData, $paymentMethod)
     {
-        $cartItems = Cart::getUserCartItems($userId);
+        try {
+            DB::beginTransaction();
 
-        if ($cartItems->isEmpty()) {
-            throw new \Exception('Koszyk jest pusty!');
-        }
+            $cartItems = Cart::getUserCartItems($userId);
 
-        // Sprawdź dostępność produktów
-        foreach ($cartItems as $item) {
-            if ($item->product->stock_quantity < $item->quantity) {
-                throw new \Exception("Produkt '{$item->product->name}' nie jest dostępny w wymaganej ilości. Dostępne: {$item->product->stock_quantity} szt.");
+            if ($cartItems->isEmpty()) {
+                throw new \Exception('Koszyk jest pusty!');
             }
-        }
 
-        $totalAmount = Cart::getUserCartTotal($userId);
+            // Sprawdź dostępność wszystkich produktów
+            foreach ($cartItems as $cartItem) {
+                if (!$cartItem->product) {
+                    throw new \Exception("Jeden z produktów został usunięty z oferty.");
+                }
 
-        $order = self::create([
-            'order_number' => self::generateOrderNumber(),
-            'user_id' => $userId,
-            'total_amount' => $totalAmount,
-            'payment_method' => $paymentMethod,
-            'first_name' => $addressData['first_name'],
-            'last_name' => $addressData['last_name'],
-            'email' => $addressData['email'],
-            'phone' => $addressData['phone'],
-            'address' => $addressData['address'],
-            'city' => $addressData['city'],
-            'postal_code' => $addressData['postal_code'],
-            'country' => $addressData['country'] ?? 'Polska',
-        ]);
+                if ($cartItem->product->stock_quantity < $cartItem->quantity) {
+                    throw new \Exception("Niewystarczająca ilość produktu {$cartItem->product->name}. Dostępne: {$cartItem->product->stock_quantity} szt.");
+                }
+            }
 
-        // Stwórz items zamówienia
-        foreach ($cartItems as $item) {
-            OrderItem::create([
+            // Oblicz całkowitą kwotę
+            $totalAmount = $cartItems->sum(function ($cartItem) {
+                return $cartItem->product ? $cartItem->product->price * $cartItem->quantity : 0;
+            });
+
+            // Znajdź lub utwórz adres
+            $user = User::find($userId);
+            $address = $user->addresses()->updateOrCreate(
+                [
+                    'first_name' => $customerData['first_name'],
+                    'last_name' => $customerData['last_name'],
+                    'address' => $customerData['address'],
+                    'city' => $customerData['city'],
+                    'postal_code' => $customerData['postal_code']
+                ],
+                [
+                    'email' => $customerData['email'],
+                    'phone' => $customerData['phone'],
+                    'country' => $customerData['country'] ?? 'Polska'
+                ]
+            );
+
+            // Utwórz zamówienie
+            $order = self::create([
+                'order_number' => self::generateOrderNumber(),
+                'user_id' => $userId,
+                'address_id' => $address->id,
+                'total_amount' => $totalAmount,
+                'payment_method' => $paymentMethod,
+                'status' => 'pending',
+                'payment_status' => 'pending'
+            ]);
+
+            \Log::info('🔥 Zamówienie utworzone z koszyka', [
                 'order_id' => $order->id,
-                'product_id' => $item->product_id,
-                'quantity' => $item->quantity,
-                'price' => $item->product->price
+                'order_number' => $order->order_number,
+                'user_id' => $userId,
+                'total_amount' => $totalAmount
+            ]);
+
+            // Dodaj produkty do zamówienia
+            foreach ($cartItems as $cartItem) {
+                $orderItem = $order->items()->create([
+                    'product_id' => $cartItem->product_id,
+                    'quantity' => $cartItem->quantity,
+                    'price' => $cartItem->product->price
+                ]);
+
+                \Log::info('🔥 Dodano item do zamówienia', [
+                    'order_item_id' => $orderItem->id,
+                    'product_id' => $cartItem->product_id,
+                    'quantity' => $cartItem->quantity
+                ]);
+
+                // Zmniejsz stan magazynowy
+                $cartItem->product->decrement('stock_quantity', $cartItem->quantity);
+            }
+
+            // Wyczyść koszyk
+            Cart::clearCart($userId);
+
+            DB::commit();
+            return $order;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('🔥 Błąd createFromCart: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public static function createFromBuyNow($userId, $productId, $quantity, $customerData, $paymentMethod)
+    {
+        try {
+            DB::beginTransaction();
+
+            $product = Product::with(['images'])->findOrFail($productId);
+
+            // Sprawdź dostępność
+            if ($product->stock_quantity < $quantity) {
+                throw new \Exception("Niewystarczająca ilość produktu {$product->name}. Dostępne: {$product->stock_quantity} szt.");
+            }
+
+            // Oblicz całkowitą kwotę
+            $totalAmount = $product->price * $quantity;
+
+            // Znajdź lub utwórz adres
+            $user = User::find($userId);
+            $address = $user->addresses()->updateOrCreate(
+                [
+                    'first_name' => $customerData['first_name'],
+                    'last_name' => $customerData['last_name'],
+                    'address' => $customerData['address'],
+                    'city' => $customerData['city'],
+                    'postal_code' => $customerData['postal_code']
+                ],
+                [
+                    'email' => $customerData['email'],
+                    'phone' => $customerData['phone'],
+                    'country' => $customerData['country'] ?? 'Polska'
+                ]
+            );
+
+            // Utwórz zamówienie
+            $order = self::create([
+                'order_number' => self::generateOrderNumber(),
+                'user_id' => $userId,
+                'address_id' => $address->id,
+                'total_amount' => $totalAmount,
+                'payment_method' => $paymentMethod,
+                'status' => 'pending',
+                'payment_status' => 'pending'
+            ]);
+
+            \Log::info('🔥 Zamówienie Buy Now utworzone', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'user_id' => $userId,
+                'product_id' => $productId,
+                'total_amount' => $totalAmount
+            ]);
+
+            // Dodaj produkt do zamówienia
+            $orderItem = $order->items()->create([
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+                'price' => $product->price
+            ]);
+
+            \Log::info('🔥 Dodano item Buy Now do zamówienia', [
+                'order_item_id' => $orderItem->id,
+                'product_id' => $product->id,
+                'quantity' => $quantity
             ]);
 
             // Zmniejsz stan magazynowy
-            $item->product->decrement('stock_quantity', $item->quantity);
+            $product->decrement('stock_quantity', $quantity);
+
+            DB::commit();
+            return $order;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('🔥 Błąd createFromBuyNow: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public static function getUserOrdersWithImages($userId)
+    {
+        return self::where('user_id', $userId)
+                  ->with(['items.product.images', 'address'])
+                  ->orderBy('created_at', 'desc')
+                  ->get();
+    }
+
+    public static function getOrderWithImages($orderId, $userId = null)
+    {
+        $query = self::with(['items.product.images', 'user', 'address']);
+
+        if ($userId) {
+            $query->where('user_id', $userId);
         }
 
-        // Wyczyść koszyk
-        Cart::clearUserCart($userId);
-
-        return $order;
+        return $query->findOrFail($orderId);
     }
 }

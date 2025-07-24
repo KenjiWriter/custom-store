@@ -1,5 +1,4 @@
 <?php
-/* filepath: c:\xampp\htdocs\custom-store\app\Http\Controllers\CartController.php */
 
 namespace App\Http\Controllers;
 
@@ -7,27 +6,72 @@ use App\Models\Cart;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
-
     /**
-     * Pokaż zawartość koszyka
+     * Pobierz zawartość koszyka (AJAX)
      */
     public function index()
     {
-        $cartItems = Auth::user()->getCartItems();
-        $cartTotal = Auth::user()->cart_total;
+        try {
+            $cartItems = Cart::where('user_id', Auth::id())
+                            ->with(['product' => function($query) {
+                                $query->with(['images' => function($imageQuery) {
+                                    $imageQuery->orderBy('is_primary', 'desc')
+                                           ->orderBy('sort_order', 'asc');
+                                }]);
+                            }])
+                            ->get();
 
-        return response()->json([
-            'items' => $cartItems,
-            'total' => number_format($cartTotal, 2) . ' zł',
-            'count' => Auth::user()->cart_count
-        ]);
+            // 🔥 POPRAWKA - Mapuj dane z prawidłowymi URL-ami zdjęć i cenami
+            $items = $cartItems->map(function($item) {
+                $product = $item->product;
+
+                return [
+                    'id' => $item->id,
+                    'quantity' => $item->quantity,
+                    'product' => $product ? [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'sku' => $product->sku,
+                        'price' => $product->price,
+                        'formatted_price' => $product->formatted_price,
+                        'primary_image_url' => $product->primary_image_url, // Używa accessora z modelu Product
+                    ] : null,
+                    'formatted_price' => $product ? $product->formatted_price : '0,00 zł',
+                    'formatted_total_price' => $product ?
+                        number_format($product->price * $item->quantity, 2, ',', ' ') . ' zł' :
+                        '0,00 zł'
+                ];
+            });
+
+            $cartTotal = $cartItems->sum(function($item) {
+                return $item->product ? $item->product->price * $item->quantity : 0;
+            });
+
+            return response()->json([
+                'success' => true,
+                'items' => $items,
+                'total' => number_format($cartTotal, 2, ',', ' ') . ' zł',
+                'count' => $cartItems->count()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Błąd CartController::index: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'items' => [],
+                'total' => '0,00 zł',
+                'count' => 0
+            ], 500);
+        }
     }
 
     /**
-     * Dodaj produkt do koszyka (AJAX)
+     * Dodaj produkt do koszyka
      */
     public function store(Request $request)
     {
@@ -37,155 +81,152 @@ class CartController extends Controller
                 'quantity' => 'integer|min:1|max:100'
             ]);
 
+            $productId = $request->product_id;
             $quantity = $request->quantity ?? 1;
-            $product = Product::findOrFail($request->product_id);
 
-            // Sprawdź dostępność produktu
+            // Sprawdź czy produkt istnieje i jest dostępny
+            $product = Product::findOrFail($productId);
+
             if ($product->stock_quantity < $quantity) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Niewystarczająca ilość produktu w magazynie. Dostępne: {$product->stock_quantity} szt."
+                    'message' => "Niewystarczająca ilość w magazynie. Dostępne: {$product->stock_quantity} szt."
                 ], 400);
             }
 
-            // Pobierz istniejący rekord koszyka lub utwórz nowy
-            $cartItem = Cart::where('user_id', Auth::id())
-                            ->where('product_id', $product->id)
-                            ->first();
+            // Sprawdź czy produkt już jest w koszyku
+            $existingCartItem = Cart::where('user_id', Auth::id())
+                                  ->where('product_id', $productId)
+                                  ->first();
 
-            if ($cartItem) {
-                // Zaktualizuj ilość
-                $newQuantity = $cartItem->quantity + $quantity;
+            if ($existingCartItem) {
+                $newQuantity = $existingCartItem->quantity + $quantity;
 
-                // Sprawdź czy nowa ilość nie przekracza stanu magazynowego
                 if ($product->stock_quantity < $newQuantity) {
                     return response()->json([
                         'success' => false,
-                        'message' => "Niewystarczająca ilość produktu w magazynie. Dostępne: {$product->stock_quantity} szt."
+                        'message' => "Maksymalna dostępna ilość: {$product->stock_quantity} szt. (masz już {$existingCartItem->quantity} w koszyku)"
                     ], 400);
                 }
 
-                $cartItem->update(['quantity' => $newQuantity]);
+                $existingCartItem->update(['quantity' => $newQuantity]);
             } else {
-                // Utwórz nowy rekord koszyka
-                $cartItem = Cart::create([
+                Cart::create([
                     'user_id' => Auth::id(),
-                    'product_id' => $product->id,
-                    'quantity' => $quantity,
+                    'product_id' => $productId,
+                    'quantity' => $quantity
                 ]);
             }
 
+            // Pobierz nową liczbę produktów w koszyku
+            $cartCount = Cart::where('user_id', Auth::id())->count();
+
             return response()->json([
                 'success' => true,
-                'message' => "Produkt '{$product->name}' został dodany do koszyka!",
-                'cart_count' => Auth::user()->cart_count,
-                'cart_total' => number_format(Auth::user()->cart_total, 2) . ' zł'
+                'message' => "Produkt został dodany do koszyka!",
+                'cart_count' => $cartCount
             ]);
+
         } catch (\Exception $e) {
+            \Log::error('Błąd CartController::store: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Wystąpił błąd podczas dodawania do koszyka'
             ], 500);
         }
     }
 
     /**
-     * Aktualizuj ilość produktu w koszyku (AJAX)
+     * Aktualizuj ilość produktu w koszyku
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $cartId)
     {
         try {
             $request->validate([
                 'quantity' => 'required|integer|min:1|max:100'
             ]);
 
-            $cartItem = Cart::where('user_id', Auth::id())
-                        ->where('id', $id)
-                        ->firstOrFail();
+            $cartItem = Cart::where('id', $cartId)
+                          ->where('user_id', Auth::id())
+                          ->with('product')
+                          ->firstOrFail();
+
+            $newQuantity = $request->quantity;
 
             // Sprawdź dostępność
-            if ($cartItem->product->stock_quantity < $request->quantity) {
+            if ($cartItem->product && $cartItem->product->stock_quantity < $newQuantity) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Niewystarczająca ilość produktu w magazynie. Dostępne: {$cartItem->product->stock_quantity} szt."
+                    'message' => "Niewystarczająca ilość w magazynie. Dostępne: {$cartItem->product->stock_quantity} szt."
                 ], 400);
             }
 
-            $cartItem->update(['quantity' => $request->quantity]);
+            $cartItem->update(['quantity' => $newQuantity]);
+
+            $cartCount = Cart::where('user_id', Auth::id())->count();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Ilość produktu została zaktualizowana!',
-                'cart_count' => Auth::user()->cart_count,
-                'cart_total' => number_format(Auth::user()->cart_total, 2) . ' zł',
-                'item_total' => $cartItem->formatted_total_price
+                'message' => 'Ilość została zaktualizowana',
+                'cart_count' => $cartCount
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Błąd CartController::update: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Wystąpił błąd podczas aktualizacji'
             ], 500);
         }
     }
 
     /**
-     * Usuń produkt z koszyka (AJAX)
+     * Usuń produkt z koszyka
      */
-    public function destroy($id)
+    public function destroy($cartId)
     {
         try {
-            $cartItem = Cart::where('user_id', Auth::id())
-                           ->where('id', $id)
-                           ->firstOrFail();
+            $cartItem = Cart::where('id', $cartId)
+                          ->where('user_id', Auth::id())
+                          ->firstOrFail();
 
-            $productName = $cartItem->product->name;
             $cartItem->delete();
+
+            $cartCount = Cart::where('user_id', Auth::id())->count();
 
             return response()->json([
                 'success' => true,
-                'message' => "Produkt '{$productName}' został usunięty z koszyka!",
-                'cart_count' => Auth::user()->cart_count,
-                'cart_total' => number_format(Auth::user()->cart_total, 2) . ' zł'
+                'message' => 'Produkt został usunięty z koszyka',
+                'cart_count' => $cartCount
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Błąd CartController::destroy: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Wystąpił błąd podczas usuwania'
             ], 500);
         }
     }
 
     /**
-     * Pobierz liczbę produktów w koszyku (AJAX)
+     * Pobierz liczbę produktów w koszyku
      */
     public function count()
     {
-        return response()->json([
-            'count' => Auth::user()->cart_count,
-            'total' => number_format(Auth::user()->cart_total, 2) . ' zł'
-        ]);
-    }
-
-    /**
-     * Wyczyść cały koszyk (AJAX)
-     */
-    public function clear()
-    {
         try {
-            Cart::clearUserCart(Auth::id());
+            $count = Cart::where('user_id', Auth::id())->count();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Koszyk został wyczyszczony!'
+                'count' => $count
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+                'count' => 0
+            ]);
         }
     }
 }

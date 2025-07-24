@@ -1,15 +1,11 @@
 <?php
-/* filepath: c:\xampp\htdocs\custom-store\app\Models\OrderItem.php */
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'order_id',
         'product_id',
@@ -22,25 +18,55 @@ class OrderItem extends Model
         'quantity' => 'integer'
     ];
 
-    // Relacje
-    public function order()
+    public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
-    public function product()
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        // POPRAWKA - Zawsze ładuj zdjęcia produktu
+        return $this->belongsTo(Product::class)->with(['images']);
     }
 
-    // Akcesory
-    public function getTotalPriceAttribute()
+    // Accessor dla sformatowanej ceny
+    public function getFormattedPriceAttribute(): string
     {
-        return $this->quantity * $this->price;
+        return number_format($this->price, 2, ',', ' ') . ' zł';
     }
 
-    public function getFormattedTotalPriceAttribute()
+    // Accessor dla całkowitej wartości pozycji
+    public function getTotalPriceAttribute(): float
     {
-        return number_format($this->total_price, 2) . ' zł';
+        return $this->price * $this->quantity;
+    }
+
+    // Accessor dla sformatowanej całkowitej wartości
+    public function getFormattedTotalPriceAttribute(): string
+    {
+        return number_format($this->total_price, 2, ',', ' ') . ' zł';
+    }
+
+    // NOWE - Accessor dla głównego zdjęcia produktu
+    public function getProductImageAttribute(): ?string
+    {
+        if ($this->product && $this->product->primary_image_url) {
+            return $this->product->primary_image_url;
+        }
+        return null;
+    }
+
+    // NOWE - Accessor dla danych zdjęć do galerii
+    public function getProductImagesAttribute(): array
+    {
+        if ($this->product && $this->product->images) {
+            return $this->product->images->map(function($image) {
+                return [
+                    'url' => $image->image_url,
+                    'alt' => $image->alt_text ?? $this->product->name
+                ];
+            })->toArray();
+        }
+        return [];
     }
 }

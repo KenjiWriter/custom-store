@@ -34,26 +34,26 @@
             </a>
 
             <div class="nav-links">
-                <a href="{{ route('home') }}" class="nav-link">🏠 Strona główna</a>
-                <a href="#" class="nav-link">📦 Produkty</a>
-                <a href="#" class="nav-link">🏷️ Kategorie</a>
-                @auth
-                    <a href="{{ route('wishlist.index') }}" class="nav-link">
-                        💖 Ulubione
-                        <span id="wishlistCounter" class="wishlist-count" style="display: {{ auth()->user()->wishlist_count > 0 ? 'flex' : 'none' }};">
-                            {{ auth()->user()->wishlist_count }}
-                        </span>
-                    </a>
-                    <!-- POPRAWIONY KOSZYK - używa class zamiast onclick -->
-                    <button class="nav-link cart-trigger">
-                        🛒 Koszyk
-                        <span class="cart-count" style="display: {{ auth()->user()->cart_count > 0 ? 'flex' : 'none' }};">
-                            {{ auth()->user()->cart_count }}
-                        </span>
-                    </button>
-                @endauth
-                <a href="#" class="nav-link">ℹ️ O nas</a>
-            </div>
+    <a href="{{ route('home') }}" class="nav-link">🏠 Strona główna</a>
+    <a href="{{ route('services') }}" class="nav-link">🔧 Usługi</a>
+    <a href="{{ route('contact') }}" class="nav-link">📞 Kontakt</a>
+    <a href="{{ route('about') }}" class="nav-link">ℹ️ O nas</a>
+    @auth
+        <a href="{{ route('wishlist.index') }}" class="nav-link">
+            💖 Ulubione
+            <span id="wishlistCounter" class="wishlist-count" style="display: {{ auth()->user()->wishlist_count > 0 ? 'flex' : 'none' }};">
+                {{ auth()->user()->wishlist_count }}
+            </span>
+        </a>
+        <!-- POPRAWIONY KOSZYK - używa class zamiast onclick -->
+        <button class="nav-link cart-trigger">
+            🛒 Koszyk
+            <span class="cart-count" style="display: {{ auth()->user()->cart_count > 0 ? 'flex' : 'none' }};">
+                {{ auth()->user()->cart_count }}
+            </span>
+        </button>
+    @endauth
+</div>
 
             <div class="auth-buttons">
                 @auth

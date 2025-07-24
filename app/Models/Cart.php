@@ -1,103 +1,91 @@
 <?php
-/* filepath: c:\xampp\htdocs\custom-store\app\Models\Cart.php */
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Cart extends Model
 {
-    use HasFactory;
+    protected $fillable = ['user_id', 'product_id', 'quantity'];
 
-    protected $fillable = [
-        'user_id',
-        'product_id',
-        'quantity',
-    ];
-
-    protected $casts = [
-        'quantity' => 'integer'
-    ];
-
-    // Relacje
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function product()
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->with(['images']);
     }
 
-    // Akcesory
-    public function getTotalPriceAttribute()
-    {
-        return $this->quantity * $this->product->price; // Pobierz cenę z relacji produktu
-    }
-
-    public function getFormattedTotalPriceAttribute()
-    {
-        return number_format($this->total_price, 2) . ' zł'; // Sformatuj cenę
-    }
-
-    // Statyczne metody
-    public static function addToCart($userId, $productId, $quantity = 1)
-    {
-        $product = Product::findOrFail($productId);
-
-        // Sprawdź dostępność
-        if ($product->stock_quantity < $quantity) {
-            throw new \Exception("Niewystarczająca ilość produktu w magazynie. Dostępne: {$product->stock_quantity} szt.");
-        }
-
-        $cartItem = self::where('user_id', $userId)
-                       ->where('product_id', $productId)
-                       ->first();
-
-        if ($cartItem) {
-            $newQuantity = $cartItem->quantity + $quantity;
-
-            // Sprawdź czy nowa ilość nie przekracza stanu
-            if ($product->stock_quantity < $newQuantity) {
-                throw new \Exception("Niewystarczająca ilość produktu w magazynie. Dostępne: {$product->stock_quantity} szt.");
-            }
-
-            $cartItem->update(['quantity' => $newQuantity]);
-            return $cartItem;
-        }
-
-        return self::create([
-            'user_id' => $userId,
-            'product_id' => $productId,
-            'quantity' => $quantity,
-        ]);
-    }
-
+    // Statyczne metody dla łatwego zarządzania koszykiem
     public static function getUserCartItems($userId)
     {
-        return self::with('product.images')
-                  ->where('user_id', $userId)
+        return self::where('user_id', $userId)
+                  ->with(['product.images'])
                   ->get();
     }
 
     public static function getUserCartTotal($userId)
     {
-        return self::with('product')
-            ->where('user_id', $userId)
-            ->get()
-            ->sum(function ($cartItem) {
-                return $cartItem->quantity * $cartItem->product->price; // Oblicz sumę na podstawie ceny produktu
-            });
-    }
-    public static function getUserCartCount($userId)
-    {
-        return self::where('user_id', $userId)->sum('quantity'); // Liczba produktów w koszyku
+        return self::where('user_id', $userId)
+                  ->with('product')
+                  ->get()
+                  ->sum(function ($cartItem) {
+                      return $cartItem->product->price * $cartItem->quantity;
+                  });
     }
 
-    public static function clearUserCart($userId)
+    public static function getUserCartCount($userId)
     {
-        return self::where('user_id', $userId)->delete();
+        return self::where('user_id', $userId)->sum('quantity');
     }
+
+    public static function addProduct($userId, $productId, $quantity = 1)
+    {
+        $existingItem = self::where('user_id', $userId)
+                           ->where('product_id', $productId)
+                           ->first();
+
+        if ($existingItem) {
+            $existingItem->quantity += $quantity;
+            $existingItem->save();
+            return $existingItem;
+        }
+
+        return self::create([
+            'user_id' => $userId,
+            'product_id' => $productId,
+            'quantity' => $quantity
+        ]);
+    }
+
+    public static function removeProduct($userId, $productId)
+    {
+        return self::where('user_id', $userId)
+                  ->where('product_id', $productId)
+                  ->delete();
+    }
+
+    public static function updateQuantity($userId, $productId, $quantity)
+    {
+        if ($quantity <= 0) {
+            return self::removeProduct($userId, $productId);
+        }
+
+        return self::where('user_id', $userId)
+                  ->where('product_id', $productId)
+                  ->update(['quantity' => $quantity]);
+    }
+
+    public static function clearCart($userId)
+{
+    return self::where('user_id', $userId)->delete();
+}
+
+public static function clearUserCart($userId)
+{
+    return self::clearCart($userId);
+}
 }

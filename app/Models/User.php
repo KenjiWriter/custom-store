@@ -1,8 +1,7 @@
 <?php
-/* filepath: c:\xampp\htdocs\custom-store\app\Models\User.php */
+
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,32 +11,19 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'first_name',
+        'last_name'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -47,48 +33,90 @@ class User extends Authenticatable
     }
 
     // RELACJE DO KOSZYKA I ZAMÓWIEŃ
-
-    /**
-     * Relacja do koszyka
-     */
     public function cartItems()
     {
         return $this->hasMany(Cart::class);
     }
 
-    /**
-     * Relacja do zamówień
-     */
     public function orders()
     {
         return $this->hasMany(Order::class)->orderBy('created_at', 'desc');
     }
 
-    /**
-     * Pobierz liczbę produktów w koszyku
-     */
+    // RELACJA DO ADRESÓW
+    public function addresses()
+    {
+        return $this->hasMany(UserAddress::class)->orderBy('is_default', 'desc');
+    }
+
+    public function defaultAddress()
+    {
+        return $this->hasOne(UserAddress::class)->where('is_default', true);
+    }
+
+    // RELACJE DO WISHLIST
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function favoriteProducts()
+    {
+        return $this->belongsToMany(Product::class, 'wishlists')
+                    ->withTimestamps()
+                    ->orderBy('wishlists.created_at', 'desc');
+    }
+
+    // AKCESORY
     public function getCartCountAttribute()
     {
         return Cart::getUserCartCount($this->id);
     }
 
-    /**
-     * Pobierz wartość koszyka
-     */
     public function getCartTotalAttribute()
     {
         return Cart::getUserCartTotal($this->id);
     }
 
-    /**
-     * Dodaj produkt do koszyka
-     */
+    public function getWishlistCountAttribute()
+    {
+        return Wishlist::getUserWishlistCount($this->id);
+    }
+
+    public function getFullNameAttribute()
+    {
+        return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? '')) ?: $this->name;
+    }
+
+    public function getTotalOrdersAttribute()
+    {
+        return $this->orders()->count();
+    }
+
+    public function getTotalSpentAttribute()
+    {
+        return $this->orders()->where('payment_status', 'paid')->sum('total_amount');
+    }
+
+    public function getLastOrderAttribute()
+    {
+        return $this->orders()->first();
+    }
+
+    public function getDefaultAddressAttribute()
+    {
+        return $this->addresses()->where('is_default', true)->first();
+    }
+
+    // METODY KOSZYKA
     public function addToCart($productId, $quantity = 1)
     {
-        // Pobierz produkt
         $product = Product::findOrFail($productId);
 
-        // Dodaj lub zaktualizuj produkt w koszyku
+        if ($product->stock_quantity < $quantity) {
+            throw new \Exception("Niewystarczająca ilość produktu w magazynie. Dostępne: {$product->stock_quantity} szt.");
+        }
+
         $cartItem = $this->cartItems()->updateOrCreate(
             ['product_id' => $productId],
             [
@@ -99,77 +127,59 @@ class User extends Authenticatable
         return $cartItem;
     }
 
-    /**
-     * Pobierz produkty z koszyka
-     */
     public function getCartItems()
     {
         return Cart::getUserCartItems($this->id);
     }
 
-    // RELACJE DO WISHLIST
-
-    /**
-     * Relacja do ulubionych produktów
-     */
-    public function wishlists()
-    {
-        return $this->hasMany(Wishlist::class);
-    }
-
-    /**
-     * Relacja many-to-many do produktów przez wishlist
-     */
-    public function favoriteProducts()
-    {
-        return $this->belongsToMany(Product::class, 'wishlists')
-                    ->withTimestamps()
-                    ->orderBy('wishlists.created_at', 'desc');
-    }
-
-    /**
-     * Sprawdź czy produkt jest w ulubionych
-     */
+    // METODY WISHLIST
     public function hasInWishlist($productId)
     {
         return $this->wishlists()->where('product_id', $productId)->exists();
     }
 
-    /**
-     * Dodaj produkt do ulubionych
-     */
     public function addToWishlist($productId)
     {
         return Wishlist::addToWishlist($this->id, $productId);
     }
 
-    /**
-     * Usuń produkt z ulubionych
-     */
     public function removeFromWishlist($productId)
     {
         return Wishlist::removeFromWishlist($this->id, $productId);
     }
 
-    /**
-     * Przełącz status produktu w ulubionych
-     */
     public function toggleWishlist($productId)
     {
         if ($this->hasInWishlist($productId)) {
             $this->removeFromWishlist($productId);
-            return false; // Usunięto
+            return false;
         } else {
             $this->addToWishlist($productId);
-            return true; // Dodano
+            return true;
         }
     }
 
-    /**
-     * Pobierz liczbę ulubionych produktów
-     */
-    public function getWishlistCountAttribute()
+    // METODY ADRESÓW
+    public function createAddress(array $data, bool $setAsDefault = false)
     {
-        return $this->wishlists()->count();
+        $address = $this->addresses()->create($data);
+
+        if ($setAsDefault || $this->addresses()->count() === 1) {
+            $address->setAsDefault();
+        }
+
+        return $address;
+    }
+
+    public function updateDefaultAddress(array $data)
+    {
+        $defaultAddress = $this->default_address;
+
+        if ($defaultAddress) {
+            $defaultAddress->update($data);
+            return $defaultAddress;
+        }
+
+        return $this->createAddress($data, true);
     }
 }

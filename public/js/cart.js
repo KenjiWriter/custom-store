@@ -1,10 +1,8 @@
 class CartManager {
     constructor() {
-        this.isOpen = false;
-        this.cartItems = [];
-        this.cartTotal = 0;
         this.cartCount = 0;
-        this.init();
+        this.isOpen = false;
+        this.modal = null;
     }
 
     init() {
@@ -79,6 +77,12 @@ class CartManager {
                 e.preventDefault();
                 this.openCartModal();
             }
+
+            // NOWE - Przejdź do checkout
+            if (e.target.matches('.btn-checkout, .btn-checkout *')) {
+                e.preventDefault();
+                this.goToCheckout();
+            }
         });
 
         // Zamknij modal przy kliknięciu w overlay
@@ -97,19 +101,23 @@ class CartManager {
     }
 
     getQuantityFromButton(button) {
-        const quantityInput = button.closest('.product-actions')?.querySelector('input[name="quantity"]') ||
-            button.closest('.product-card')?.querySelector('input[name="quantity"]') ||
-            button.closest('form')?.querySelector('input[name="quantity"]');
-
-        return quantityInput ? parseInt(quantityInput.value) || 1 : 1;
+        // Szukaj w tym samym kontenerze co przycisk
+        const container = button.closest('.product-actions, .quick-add-form, .product-controls');
+        if (container) {
+            const quantityInput = container.querySelector('input[name="quantity"], .quantity-input');
+            if (quantityInput) {
+                return parseInt(quantityInput.value) || 1;
+            }
+        }
+        return 1;
     }
 
     async addToCart(productId, quantity = 1, button = null) {
         try {
             if (button) {
-                const originalText = button.innerHTML;
-                button.innerHTML = '⏳ Dodawanie...';
                 button.disabled = true;
+                button.innerHTML = '⏳ Dodawanie...';
+                button.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
             }
 
             const response = await fetch('/cart', {
@@ -133,7 +141,7 @@ class CartManager {
                     button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
 
                     setTimeout(() => {
-                        button.innerHTML = originalText;
+                        button.innerHTML = '🛒 Dodaj do koszyka';
                         button.style.background = '';
                         button.disabled = false;
                     }, 2000);
@@ -162,31 +170,67 @@ class CartManager {
         }
     }
 
-    async openCartModal() {
+    async buyNow(productId, quantity = 1) {
         try {
-            const modal = document.getElementById('cartModal');
-            if (!modal) {
-                console.error('Cart modal not found');
+            // Przekieruj do strony buy-now z parametrami
+            const url = new URL('/checkout/buy-now', window.location.origin);
+            url.searchParams.append('product_id', productId);
+            url.searchParams.append('quantity', quantity);
+
+            window.location.href = url.toString();
+        } catch (error) {
+            console.error('Błąd Buy Now:', error);
+            this.showNotification('Wystąpił błąd podczas przekierowania', 'error');
+        }
+    }
+
+    // NOWA FUNKCJA - przejdź do checkout
+    async goToCheckout() {
+        try {
+            // Sprawdź czy koszyk nie jest pusty
+            const response = await fetch('/cart/count', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.count === 0) {
+                this.showNotification('Koszyk jest pusty! Dodaj produkty przed przejściem do kasy.', 'error');
                 return;
             }
 
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-            this.isOpen = true;
-
-            await this.loadCartContent();
+            // Przekieruj do checkout
+            window.location.href = '/checkout';
         } catch (error) {
-            console.error('Błąd otwierania koszyka:', error);
-            this.showNotification('Błąd podczas ładowania koszyka', 'error');
+            console.error('Błąd przejścia do checkout:', error);
+            // Fallback - zawsze spróbuj przekierować
+            window.location.href = '/checkout';
+        }
+    }
+
+    async openCartModal() {
+        this.isOpen = true;
+        const modal = document.getElementById('cartModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            await this.loadCartContent();
         }
     }
 
     closeCartModal() {
+        this.isOpen = false;
         const modal = document.getElementById('cartModal');
         if (modal) {
-            modal.style.display = 'none';
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
             document.body.style.overflow = '';
-            this.isOpen = false;
         }
     }
 
@@ -194,6 +238,7 @@ class CartManager {
         try {
             const bodyElement = document.getElementById('cartModalBody');
             const footerElement = document.getElementById('cartModalFooter');
+            const itemCount = document.getElementById('cartModalItemCount');
 
             if (!bodyElement) return;
 
@@ -216,6 +261,13 @@ class CartManager {
             }
 
             const data = await response.json();
+
+            // Aktualizuj licznik w headerze
+            if (itemCount) {
+                const count = data.items ? data.items.length : 0;
+                itemCount.textContent = `${count} ${count === 1 ? 'produkt' : count < 5 ? 'produkty' : 'produktów'}`;
+            }
+
             this.renderCartContent(data.items || [], data.total || '0,00 zł');
         } catch (error) {
             console.error('Błąd ładowania koszyka:', error);
@@ -223,8 +275,9 @@ class CartManager {
             if (bodyElement) {
                 bodyElement.innerHTML = `
                     <div class="cart-empty">
-                        <h3>❌ Błąd ładowania</h3>
-                        <p>Nie udało się załadować zawartości koszyka.</p>
+                        <div class="cart-empty-icon">❌</div>
+                        <h3>Błąd ładowania</h3>
+                        <p>Nie udało się załadować zawartości koszyka</p>
                         <button class="btn btn-primary" onclick="cart.loadCartContent()">Spróbuj ponownie</button>
                     </div>
                 `;
@@ -232,103 +285,112 @@ class CartManager {
         }
     }
 
-    renderCartContent(items, total) {
+     renderCartContent(items, total) {
         const bodyElement = document.getElementById('cartModalBody');
         const footerElement = document.getElementById('cartModalFooter');
+        const subtotalElement = document.getElementById('cartModalSubtotal');
+        const totalElement = document.getElementById('cartModalTotal');
 
         if (!bodyElement) return;
 
         if (items.length === 0) {
             bodyElement.innerHTML = `
                 <div class="cart-empty">
-                    <h3>🛒 Koszyk jest pusty</h3>
-                    <p>Dodaj produkty do koszyka, aby je tutaj zobaczyć.</p>
+                    <div class="cart-empty-icon">🛒</div>
+                    <h3>Twój koszyk jest pusty</h3>
+                    <p>Dodaj produkty, aby zobaczyć je tutaj</p>
+                    <button class="btn btn-primary" onclick="cart.closeCartModal()">
+                        🛍️ Kontynuuj zakupy
+                    </button>
                 </div>
             `;
-
-            if (footerElement) {
-                footerElement.style.display = 'none';
-            }
+            if (footerElement) footerElement.style.display = 'none';
             return;
         }
 
-        const itemsHtml = items.map(item => this.renderCartItem(item)).join('');
-        bodyElement.innerHTML = `<div class="cart-items">${itemsHtml}</div>`;
-
-        if (footerElement) {
-            footerElement.style.display = 'block';
-            const totalElement = document.getElementById('cartModalTotal');
-            if (totalElement) {
-                totalElement.textContent = total;
+        // 🔥 POPRAWKA - Renderuj produkty w koszyku z prawidłowymi zdjęciami i cenami
+        const itemsHtml = items.map(item => {
+            // Poprawka dla zdjęcia
+            let imageHtml = '';
+            if (item.product && item.product.primary_image_url) {
+                imageHtml = `<img src="${item.product.primary_image_url}" alt="${item.product.name}" class="cart-item-image">`;
+            } else {
+                imageHtml = '<div class="cart-item-placeholder">📷</div>';
             }
-        }
 
-        this.bindCartItemEvents();
-    }
+            // Poprawka dla cen - użyj danych z API
+            const unitPrice = item.product ? item.product.formatted_price : '0,00 zł';
+            const totalPrice = item.formatted_total_price ||
+                              (item.product ?
+                                `${(parseFloat(item.product.price) * parseInt(item.quantity)).toFixed(2).replace('.', ',')} zł` :
+                                '0,00 zł');
 
-    renderCartItem(item) {
-        const imageHtml = item.product.images && item.product.images.length > 0
-            ? `<img src="/storage/${item.product.images[0].image_path}" alt="${item.product.name}">`
-            : `<div class="cart-item-no-image">📦</div>`;
-
-        return `
-            <div class="cart-item" data-cart-id="${item.id}">
-                <div class="cart-item-image">${imageHtml}</div>
-                <div class="cart-item-info">
-                    <h4 class="cart-item-name">${item.product.name}</h4>
-                    <div class="cart-item-price">${item.formatted_total_price}</div>
-                    <div class="cart-item-controls">
-                        <div class="quantity-controls">
-                            <button class="quantity-btn" onclick="cart.updateQuantity(${item.id}, ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
-                            <input type="number" class="quantity-input" value="${item.quantity}" min="1" max="100" onchange="cart.updateQuantity(${item.id}, this.value)">
-                            <button class="quantity-btn" onclick="cart.updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
+            return `
+                <div class="cart-item" data-cart-id="${item.id}">
+                    ${imageHtml}
+                    <div class="cart-item-details">
+                        <div class="cart-item-name">${item.product ? item.product.name : 'Produkt usunięty'}</div>
+                        <div class="cart-item-meta">SKU: ${item.product?.sku || 'Brak'}</div>
+                        <div class="cart-item-controls">
+                            <div class="quantity-controls">
+                                <button class="quantity-btn" onclick="cart.updateQuantity(${item.id}, ${item.quantity - 1})">-</button>
+                                <span class="quantity">${item.quantity}</span>
+                                <button class="quantity-btn" onclick="cart.updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
+                            </div>
+                            <button class="remove-btn" onclick="cart.removeItem(${item.id})">🗑️ Usuń</button>
                         </div>
-                        <button class="remove-btn" onclick="cart.removeItem(${item.id})" title="Usuń z koszyka">🗑️</button>
+                    </div>
+                    <div class="cart-item-price">
+                        <div class="cart-item-unit-price">${unitPrice}/szt.</div>
+                        <div class="cart-item-total">${totalPrice}</div>
                     </div>
                 </div>
-            </div>
-        `;
-    }
+            `;
+        }).join('');
 
-    bindCartItemEvents() {
-        document.querySelectorAll('.quantity-input').forEach(input => {
-            input.addEventListener('blur', (e) => {
-                const cartId = e.target.closest('.cart-item').dataset.cartId;
-                const quantity = parseInt(e.target.value) || 1;
-                this.updateQuantity(cartId, quantity);
-            });
-        });
+        bodyElement.innerHTML = itemsHtml;
+
+        // Pokaż footer z sumą i przyciskami
+        if (footerElement) {
+            if (subtotalElement) subtotalElement.textContent = total;
+            if (totalElement) totalElement.textContent = total;
+            footerElement.style.display = 'block';
+        }
     }
 
     async updateQuantity(cartId, quantity) {
-        try {
-            if (quantity < 1) return;
-
-            const response = await fetch(`/cart/${cartId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ quantity: quantity })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                this.updateCartCounter(data.cart_count);
-                await this.loadCartContent();
-                this.showNotification(data.message, 'success');
-            } else {
-                throw new Error(data.message);
-            }
-        } catch (error) {
-            console.error('Błąd aktualizacji ilości:', error);
-            this.showNotification(error.message || 'Błąd podczas aktualizacji ilości', 'error');
-            await this.loadCartContent();
+    try {
+        if (quantity < 1) {
+            this.removeItem(cartId);
+            return;
         }
+
+        // 🔥 POPRAWKA - Użyj PATCH zamiast PUT
+        const response = await fetch(`/cart/${cartId}`, {
+            method: 'PATCH', // Zmienione z PUT na PATCH
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ quantity: quantity })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            this.updateCartCounter(data.cart_count);
+            await this.loadCartContent();
+            this.showNotification(data.message, 'success');
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        console.error('Błąd aktualizacji ilości:', error);
+        this.showNotification(error.message || 'Błąd podczas aktualizacji ilości', 'error');
+        await this.loadCartContent();
     }
+}
 
     async removeItem(cartId) {
         try {
@@ -397,72 +459,64 @@ class CartManager {
         this.updateCartCount();
     }
 
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', duration = 4000) {
+        // Usuń istniejące powiadomienia
+        document.querySelectorAll('.cart-notification').forEach(n => n.remove());
+
         const notification = document.createElement('div');
-        notification.className = 'cart-notification';
+        notification.className = `cart-notification cart-notification-${type}`;
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${this.getNotificationColor(type)};
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
             color: white;
             padding: 1rem 1.5rem;
-            border-radius: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 10000;
-            font-weight: 600;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: slideInRight 0.3s ease;
+            font-weight: 500;
             max-width: 300px;
-            word-wrap: break-word;
+            animation: slideInRight 0.3s ease;
         `;
         notification.textContent = message;
 
         document.body.appendChild(notification);
 
         setTimeout(() => {
-            notification.style.animation = 'slideOutRight 0.3s ease forwards';
+            notification.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => notification.remove(), 300);
-        }, 4000);
-    }
-
-    getNotificationColor(type) {
-        switch (type) {
-            case 'success': return '#10b981';
-            case 'error': return '#ef4444';
-            case 'warning': return '#f59e0b';
-            default: return '#3b82f6';
-        }
+        }, duration);
     }
 }
 
-// Globalne funkcje
-let cart;
-
-function initCart() {
-    if (!cart) {
-        cart = new CartManager();
-    }
-    return cart;
-}
-
+// Globalne funkcje dla kompatybilności wstecznej
 function openCartModal() {
-    if (!cart) initCart();
-    cart.openCartModal();
+    if (window.cart) {
+        window.cart.openCartModal();
+    }
 }
 
 function closeCartModal() {
-    if (cart) cart.closeCartModal();
+    if (window.cart) {
+        window.cart.closeCartModal();
+    }
 }
 
-// Auto-inicjalizacja
-document.addEventListener('DOMContentLoaded', function () {
-    const isAuthenticated = document.querySelector('meta[name="user-authenticated"]');
-    if (isAuthenticated && isAuthenticated.content === 'true') {
-        initCart();
+function goToCheckout() {
+    if (window.cart) {
+        window.cart.goToCheckout();
     }
+}
+
+// Inicjalizacja po załadowaniu DOM
+document.addEventListener('DOMContentLoaded', function() {
+    window.cart = new CartManager();
+    window.cart.init();
+    console.log('Cart Manager initialized');
 });
 
 // Export dla modułów
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { CartManager, initCart };
+    module.exports = CartManager;
 }

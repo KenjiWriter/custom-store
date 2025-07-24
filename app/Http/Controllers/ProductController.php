@@ -1,5 +1,4 @@
 <?php
-/* filepath: c:\xampp\htdocs\custom-store\app\Http\Controllers\ProductController.php */
 
 namespace App\Http\Controllers;
 
@@ -8,6 +7,25 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    /**
+     * Strona główna - lista produktów
+     */
+    public function home()
+    {
+        $products = Product::with(['images' => function($query) {
+            $query->where('is_primary', true)->first();
+        }])
+        ->where('is_available', true)
+        ->where('stock_quantity', '>', 0)
+        ->latest()
+        ->paginate(12);
+
+        return view('home', compact('products'));
+    }
+
+    /**
+     * Szczegóły produktu
+     */
     public function show($id)
     {
         $product = Product::with(['images' => function($query) {
@@ -26,6 +44,9 @@ class ProductController extends Controller
         return view('products.show', compact('product', 'relatedProducts'));
     }
 
+    /**
+     * Pobierz zdjęcia produktu (AJAX)
+     */
     public function getImages($id)
     {
         $product = Product::with(['images' => function($query) {
@@ -54,7 +75,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Sprawdź dostępność produktu
+     * Sprawdź dostępność produktu (AJAX)
      */
     public function checkStock(Request $request, $id)
     {
