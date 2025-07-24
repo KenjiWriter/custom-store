@@ -26,6 +26,9 @@
         </div>
     </div>
 
+    <!-- 🔥 POWIADOMIENIA DYNAMICZNE -->
+    <div id="alertContainer"></div>
+
     @if(session('success'))
         <div class="alert alert-success">
             <div class="alert-icon">✅</div>
@@ -46,7 +49,7 @@
         </div>
     @endif
 
-    <!-- Main Content Grid - POPRAWIONY UKŁAD -->
+    <!-- Main Content Grid -->
     <div class="contact-content-grid">
         <!-- Contact Form - Lewa strona -->
         <div class="contact-form-section">
@@ -55,32 +58,51 @@
                 <p class="form-description">Wypełnij formularz poniżej, a odpowiemy w ciągu 24 godzin</p>
             </div>
 
-            <form method="POST" action="{{ route('contact.submit') }}" class="contact-form">
+            <!-- 🔥 NOWY FORMULARZ Z EmailJS -->
+            <form id="contactForm" class="contact-form">
                 @csrf
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="name">
+                        <label for="first_name">
                             <span class="label-icon">👤</span>
-                            Imię i nazwisko *
+                            Imię *
                         </label>
-                        <input type="text" name="name" id="name" required value="{{ old('name') }}"
-                               placeholder="np. Jan Kowalski">
-                        @error('name')
-                            <span class="error">{{ $message }}</span>
-                        @enderror
+                        <input type="text" name="first_name" id="first_name" required
+                               placeholder="np. Jan">
+                        <span class="error" id="first_name_error"></span>
                     </div>
 
+                    <div class="form-group">
+                        <label for="last_name">
+                            <span class="label-icon">👤</span>
+                            Nazwisko *
+                        </label>
+                        <input type="text" name="last_name" id="last_name" required
+                               placeholder="np. Kowalski">
+                        <span class="error" id="last_name_error"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
                         <label for="email">
                             <span class="label-icon">📧</span>
                             Email *
                         </label>
-                        <input type="email" name="email" id="email" required value="{{ old('email') }}"
+                        <input type="email" name="email" id="email" required
                                placeholder="np. jan@example.com">
-                        @error('email')
-                            <span class="error">{{ $message }}</span>
-                        @enderror
+                        <span class="error" id="email_error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">
+                            <span class="label-icon">📞</span>
+                            Telefon
+                        </label>
+                        <input type="tel" name="phone" id="phone"
+                               placeholder="np. +48 123 456 789">
+                        <span class="error" id="phone_error"></span>
                     </div>
                 </div>
 
@@ -91,17 +113,15 @@
                     </label>
                     <select name="subject" id="subject" required>
                         <option value="">-- Wybierz temat wiadomości --</option>
-                        <option value="Pytanie o produkt" {{ old('subject') == 'Pytanie o produkt' ? 'selected' : '' }}>🛍️ Pytanie o produkt</option>
-                        <option value="Problem z zamówieniem" {{ old('subject') == 'Problem z zamówieniem' ? 'selected' : '' }}>📦 Problem z zamówieniem</option>
-                        <option value="Reklamacja" {{ old('subject') == 'Reklamacja' ? 'selected' : '' }}>⚠️ Reklamacja</option>
-                        <option value="Pytanie o dostawę" {{ old('subject') == 'Pytanie o dostawę' ? 'selected' : '' }}>🚚 Pytanie o dostawę</option>
-                        <option value="Współpraca biznesowa" {{ old('subject') == 'Współpraca biznesowa' ? 'selected' : '' }}>🤝 Współpraca biznesowa</option>
-                        <option value="Wsparcie techniczne" {{ old('subject') == 'Wsparcie techniczne' ? 'selected' : '' }}>🔧 Wsparcie techniczne</option>
-                        <option value="Inne" {{ old('subject') == 'Inne' ? 'selected' : '' }}>💬 Inne</option>
+                        <option value="Pytanie o produkt">🛍️ Pytanie o produkt</option>
+                        <option value="Problem z zamówieniem">📦 Problem z zamówieniem</option>
+                        <option value="Reklamacja">⚠️ Reklamacja</option>
+                        <option value="Pytanie o dostawę">🚚 Pytanie o dostawę</option>
+                        <option value="Współpraca biznesowa">🤝 Współpraca biznesowa</option>
+                        <option value="Wsparcie techniczne">🔧 Wsparcie techniczne</option>
+                        <option value="Inne">💬 Inne</option>
                     </select>
-                    @error('subject')
-                        <span class="error">{{ $message }}</span>
-                    @enderror
+                    <span class="error" id="subject_error"></span>
                 </div>
 
                 <div class="form-group">
@@ -110,17 +130,15 @@
                         Twoja wiadomość *
                     </label>
                     <textarea name="message" id="message" rows="6" required
-                              placeholder="Opisz swoją sprawę szczegółowo...">{{ old('message') }}</textarea>
+                              placeholder="Opisz swoją sprawę szczegółowo..."></textarea>
                     <div class="char-count">
                         <span id="charCount">0</span> / 2000 znaków
                     </div>
-                    @error('message')
-                        <span class="error">{{ $message }}</span>
-                    @enderror
+                    <span class="error" id="message_error"></span>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary btn-send">
+                    <button type="submit" class="btn btn-primary btn-send" id="submitBtn">
                         <span class="btn-icon">📤</span>
                         Wyślij wiadomość
                     </button>
@@ -131,7 +149,7 @@
             </form>
         </div>
 
-        <!-- Contact Info - Prawa strona -->
+        <!-- Contact Info - Prawa strona (bez zmian) -->
         <div class="contact-info-section">
             <h2>📍 Dane kontaktowe</h2>
 
@@ -196,7 +214,7 @@
         </div>
     </div>
 
-    <!-- Map Section -->
+    <!-- Map Section (bez zmian) -->
     <div class="map-section">
         <h2 class="section-title">📍 Znajdź nas na mapie</h2>
         <p class="section-description">Odwiedź nasz sklep stacjonarny w centrum Warszawy</p>
@@ -257,7 +275,7 @@
         </div>
     </div>
 
-    <!-- FAQ Section -->
+    <!-- FAQ Section (bez zmian) -->
     <div class="faq-section">
         <h2 class="section-title">❓ Często zadawane pytania</h2>
         <div class="faq-grid">
@@ -290,7 +308,7 @@
 </div>
 
 <style>
-/* Contact Page Enhanced Styles - POPRAWIONY SYMETRYCZNY UKŁAD */
+/* Contact Page Enhanced Styles - ZACHOWUJ ISTNIEJĄCE STYLE */
 .contact-hero {
     background: var(--bg-card);
     border: 2px solid var(--border-color);
@@ -354,6 +372,59 @@
 
 .feature-icon {
     font-size: 1.5rem;
+}
+
+/* 🔥 NOWE STYLE DLA DYNAMICZNYCH ALERTÓW */
+#alertContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 400px;
+}
+
+.dynamic-alert {
+    background: var(--bg-card);
+    border: 2px solid;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 8px 25px var(--shadow-color);
+    transform: translateX(100%);
+    opacity: 0;
+    animation: slideInRight 0.5s ease forwards;
+}
+
+.dynamic-alert.success {
+    border-color: #10b981;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
+}
+
+.dynamic-alert.error {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
+}
+
+.dynamic-alert.info {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
+}
+
+@keyframes slideInRight {
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
 }
 
 .alert {
@@ -503,13 +574,17 @@
     color: #ef4444;
     font-size: 0.875rem;
     margin-top: 0.3rem;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.error.show {
+    opacity: 1;
 }
 
 .error::before {
-    content: '⚠️';
+    content: '⚠️ ';
 }
 
 .form-actions {
@@ -540,13 +615,19 @@
     margin-bottom: 1rem;
 }
 
-.btn-send:hover {
+.btn-send:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px var(--glow-color);
 }
 
 .btn-send:active {
     transform: translateY(0);
+}
+
+.btn-send:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .form-note {
@@ -556,7 +637,7 @@
     margin: 0;
 }
 
-/* WYRÓWNANIE PRAWEJ KOLUMNY */
+/* POZOSTAŁE STYLE - ZACHOWAJ WSZYSTKIE ISTNIEJĄCE */
 .contact-info-section h2 {
     text-align: center;
     margin-bottom: 2rem;
@@ -825,6 +906,11 @@
     .map-container {
         grid-template-columns: 1fr;
     }
+
+    #alertContainer {
+        max-width: 320px;
+        right: 10px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -867,6 +953,12 @@
         flex-direction: row;
         gap: 1rem;
     }
+
+    #alertContainer {
+        right: 5px;
+        left: 5px;
+        max-width: none;
+    }
 }
 
 @media (max-width: 480px) {
@@ -886,8 +978,21 @@
 }
 </style>
 
+<!-- 🔥 EmailJS CDN -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 🔥 INICJALIZACJA EmailJS
+    emailjs.init("TdEOS-_stP86YnkYW"); // ZMIEŃ NA SWÓJ KLUCZ
+
+    // 🔥 KONFIGURACJA EmailJS
+    const EMAIL_CONFIG = {
+        serviceID: 'service_1j0t5is',        // Np. 'service_abc123'
+        templateID: 'template_ysarmwb',      // Np. 'template_xyz789'
+        publicKey: 'TdEOS-_stP86YnkYW'         // Np. 'user_def456'
+    };
+
     // Character counter for message textarea
     const messageTextarea = document.getElementById('message');
     const charCount = document.getElementById('charCount');
@@ -910,19 +1015,222 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCharCount(); // Initial count
     }
 
-    // Enhanced form submission
-    const contactForm = document.querySelector('.contact-form');
+    // 🔥 FUNKCJA POKAZYWANIA ALERTÓW
+    function showAlert(message, type = 'info', duration = 5000) {
+        const alertContainer = document.getElementById('alertContainer');
+
+        const alert = document.createElement('div');
+        alert.className = `dynamic-alert ${type}`;
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            info: 'ℹ️'
+        };
+
+        alert.innerHTML = `
+            <div class="alert-icon">${icons[type] || icons.info}</div>
+            <div class="alert-content">
+                <p>${message}</p>
+            </div>
+        `;
+
+        alertContainer.appendChild(alert);
+
+        // Auto-remove
+        setTimeout(() => {
+            alert.style.animation = 'slideOutRight 0.5s ease forwards';
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 500);
+        }, duration);
+    }
+
+    // 🔥 WALIDACJA FORMULARZA
+    function validateForm(formData) {
+        const errors = {};
+
+        // Wymagane pola
+        const required = ['first_name', 'last_name', 'email', 'subject', 'message'];
+        required.forEach(field => {
+            if (!formData[field] || formData[field].trim() === '') {
+                errors[field] = 'To pole jest wymagane';
+            }
+        });
+
+        // Walidacja email
+        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            errors.email = 'Podaj poprawny adres email';
+        }
+
+        // Walidacja telefonu (jeśli podany)
+        if (formData.phone && !/^[\+]?[0-9\s\-\(\)]{9,15}$/.test(formData.phone)) {
+            errors.phone = 'Podaj poprawny numer telefonu';
+        }
+
+        // Walidacja wiadomości
+        if (formData.message && formData.message.length < 10) {
+            errors.message = 'Wiadomość musi mieć co najmniej 10 znaków';
+        }
+
+        if (formData.message && formData.message.length > 2000) {
+            errors.message = 'Wiadomość może mieć maksymalnie 2000 znaków';
+        }
+
+        return errors;
+    }
+
+    // 🔥 POKAZYWANIE BŁĘDÓW WALIDACJI
+    function showValidationErrors(errors) {
+        // Wyczyść poprzednie błędy
+        document.querySelectorAll('.error').forEach(error => {
+            error.textContent = '';
+            error.classList.remove('show');
+        });
+
+        // Pokaż nowe błędy
+        Object.keys(errors).forEach(field => {
+            const errorElement = document.getElementById(`${field}_error`);
+            if (errorElement) {
+                errorElement.textContent = errors[field];
+                errorElement.classList.add('show');
+            }
+        });
+
+        // Focus na pierwszy błędny input
+        const firstErrorField = Object.keys(errors)[0];
+        if (firstErrorField) {
+            const input = document.getElementById(firstErrorField);
+            if (input) {
+                input.focus();
+                input.style.borderColor = '#ef4444';
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                }, 3000);
+            }
+        }
+    }
+
+    // 🔥 GŁÓWNA OBSŁUGA FORMULARZA
+    const contactForm = document.getElementById('contactForm');
+    const submitBtn = document.getElementById('submitBtn');
+
     if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.innerHTML = '<span class="btn-icon">⏳</span> Wysyłanie...';
-                submitBtn.disabled = true;
+        contactForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Zbierz dane formularza
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            // Walidacja
+            const errors = validateForm(data);
+            if (Object.keys(errors).length > 0) {
+                showValidationErrors(errors);
+                showAlert('Proszę poprawić błędy w formularzu', 'error');
+                return;
+            }
+
+            // Wyczyść błędy walidacji
+            document.querySelectorAll('.error').forEach(error => {
+                error.classList.remove('show');
+            });
+
+            // Zmień przycisk na loading
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="btn-icon">⏳</span> Wysyłanie...';
+            submitBtn.disabled = true;
+
+            try {
+                // 🔥 WYSYŁANIE PRZEZ EmailJS
+                const templateParams = {
+                    from_name: `${data.first_name} ${data.last_name}`,
+                    from_email: data.email,
+                    phone: data.phone || 'Nie podano',
+                    subject: data.subject,
+                    message: data.message,
+                    to_email: 'kontakt@naszskep.pl', // Twój email docelowy
+                    reply_to: data.email
+                };
+
+                console.log('🔥 Wysyłanie emaila z danymi:', templateParams);
+
+                const response = await emailjs.send(
+                    EMAIL_CONFIG.serviceID,
+                    EMAIL_CONFIG.templateID,
+                    templateParams,
+                    EMAIL_CONFIG.publicKey
+                );
+
+                console.log('✅ Email wysłany pomyślnie:', response);
+
+                // Sukces
+                showAlert('✅ Wiadomość została wysłana pomyślnie! Odpowiemy w ciągu 24 godzin.', 'success', 7000);
+
+                // Wyczyść formularz
+                contactForm.reset();
+                updateCharCount();
+
+                // Opcjonalnie: zapisz w localStorage dla statystyk
+                const sentEmails = JSON.parse(localStorage.getItem('sentContactEmails') || '[]');
+                sentEmails.push({
+                    date: new Date().toISOString(),
+                    subject: data.subject,
+                    email: data.email
+                });
+                localStorage.setItem('sentContactEmails', JSON.stringify(sentEmails));
+
+            } catch (error) {
+                console.error('❌ Błąd wysyłania emaila:', error);
+
+                let errorMessage = 'Wystąpił błąd podczas wysyłania wiadomości. ';
+
+                if (error.status === 400) {
+                    errorMessage += 'Sprawdź poprawność danych.';
+                } else if (error.status === 401) {
+                    errorMessage += 'Problem z autoryzacją serwisu.';
+                } else if (error.status === 402) {
+                    errorMessage += 'Przekroczony limit wysyłek.';
+                } else {
+                    errorMessage += 'Spróbuj ponownie później lub skontaktuj się telefonicznie.';
+                }
+
+                showAlert(errorMessage, 'error', 8000);
+            } finally {
+                // Przywróć przycisk
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         });
     }
 
-    // Animate FAQ items on scroll
+    // 🔥 REAL-TIME WALIDACJA
+    const inputs = document.querySelectorAll('#contactForm input, #contactForm select, #contactForm textarea');
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const data = { [this.name]: this.value };
+            const errors = validateForm(data);
+
+            const errorElement = document.getElementById(`${this.name}_error`);
+            if (errorElement) {
+                if (errors[this.name]) {
+                    errorElement.textContent = errors[this.name];
+                    errorElement.classList.add('show');
+                    this.style.borderColor = '#ef4444';
+                } else {
+                    errorElement.classList.remove('show');
+                    this.style.borderColor = '#10b981';
+                    setTimeout(() => {
+                        this.style.borderColor = '';
+                    }, 2000);
+                }
+            }
+        });
+    });
+
+    // Animate FAQ items on scroll (zachowaj istniejącą funkcjonalność)
     const faqItems = document.querySelectorAll('.faq-item');
     const observerOptions = {
         threshold: 0.1,
@@ -945,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         faqObserver.observe(item);
     });
 
-    // Enhanced contact item animations
+    // Enhanced contact item animations (zachowaj istniejącą funkcjonalność)
     const contactItems = document.querySelectorAll('.contact-item');
     contactItems.forEach((item, index) => {
         item.style.opacity = '0';
@@ -959,9 +1267,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Live chat function
+// Live chat function (zachowaj istniejącą funkcjonalność)
 function startLiveChat() {
-    // Animate button
     const chatBtn = event.target;
     chatBtn.innerHTML = '⏳ Łączenie...';
     chatBtn.disabled = true;
