@@ -6,34 +6,36 @@
 <style>
 /* Buy Now checkout styles - SKOPIOWANE Z BUY-NOW */
 .checkout-container {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: var(--bg-primary);
 }
 
 .checkout-container h1 {
     text-align: center;
-    margin-bottom: 2rem;
+    color: var(--accent-primary);
+    margin-bottom: 3rem;
     font-size: 2.5rem;
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-weight: 800;
+    text-shadow: 0 2px 4px var(--shadow-color);
 }
 
+/* 🔥 GŁÓWNY LAYOUT - 2 KOLUMNY */
 .checkout-layout {
     display: grid;
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 2fr 1fr; /* Formularz większy, podsumowanie mniejsze */
     gap: 3rem;
-    margin-top: 2rem;
+    align-items: start;
 }
 
+/* LEWA KOLUMNA - FORMULARZ */
 .checkout-form {
-    background: var(--bg-secondary);
+    background: var(--bg-card);
     border-radius: 20px;
     padding: 3rem;
-    border: 1px solid var(--border-light);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px var(--shadow-color);
+    border: 1px solid var(--border-color);
 }
 
 .form-section {
@@ -233,29 +235,124 @@
 
 /* Order Summary Sidebar */
 .order-summary {
-    background: var(--bg-secondary);
-    border-radius: 16px;
-    padding: 2rem;
-    border: 1px solid var(--border-light);
-    height: fit-content;
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    border: 1px solid var(--border-color);
     position: sticky;
-    top: 2rem;
+    top: 2rem; /* Sticky positioning */
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
 }
 
 .order-summary h3 {
-    margin: 0 0 1.5rem 0;
-    font-size: 1.3rem;
-    color: var(--text-primary);
-    padding-bottom: 0.5rem;
+    color: var(--accent-primary);
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
     border-bottom: 2px solid var(--accent-primary);
+    padding-bottom: 1rem;
+}
+
+.address-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.address-option {
+    position: relative;
+}
+
+.address-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.address-card {
+    display: block;
+    padding: 1.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.address-card:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-card);
+}
+
+.address-option input[type="radio"]:checked + .address-card {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(118, 75, 162, 0.05) 0%, transparent 100%);
+    box-shadow: 0 4px 15px var(--glow-color);
+}
+
+.address-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.address-badge {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.2rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.address-details {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.new-address {
+    border-style: dashed;
+    text-align: center;
+}
+
+.new-address .address-header {
+    justify-content: center;
+    color: var(--accent-primary);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.checkbox-label:hover {
+    background: var(--bg-card);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent-primary);
 }
 
 .summary-item {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-light);
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .summary-item:last-child {
@@ -263,24 +360,25 @@
 }
 
 .summary-image {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
+    width: 80px;
+    height: 80px;
     object-fit: cover;
-    border: 2px solid var(--border-light);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .summary-image-placeholder {
-    width: 60px;
-    height: 60px;
-    background: var(--bg-tertiary);
-    border-radius: 8px;
+    width: 80px;
+    height: 80px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 2rem;
     color: var(--text-secondary);
-    font-size: 1.5rem;
-    border: 2px solid var(--border-light);
+    flex-shrink: 0;
 }
 
 .summary-details {
@@ -289,45 +387,49 @@
 }
 
 .summary-name {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.25rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.4;
 }
 
 .summary-quantity {
-    font-size: 0.9rem;
     color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .summary-price {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--accent-primary);
+    font-size: 1.1rem;
     text-align: right;
+    flex-shrink: 0;
 }
 
+/* PODSUMOWANIE FINANSOWE */
 .summary-total {
-    border-top: 2px solid var(--border-light);
-    padding-top: 1rem;
-    margin-top: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-color);
 }
 
 .summary-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
 }
 
 .summary-row:last-child {
-    font-size: 1.2rem;
+    margin-bottom: 0;
+    font-size: 1.3rem;
     font-weight: 700;
     color: var(--accent-primary);
-    margin-bottom: 0;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border-light);
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
 }
 
 .security-notice {
@@ -387,21 +489,69 @@
 <div class="checkout-container">
     <h1>🛒 Finalizacja zamówienia</h1>
 
+    {{-- 🔥 GŁÓWNY LAYOUT 2-KOLUMNOWY --}}
     <div class="checkout-layout">
-        <!-- Formularz zamówienia -->
+
+        {{-- LEWA KOLUMNA - FORMULARZ --}}
         <div class="checkout-form">
             <form method="POST" action="{{ route('checkout.process') }}" id="checkoutForm">
                 @csrf
 
-                <!-- Dane osobowe -->
+                {{-- 🔥 SEKCJA WYBORU ADRESU (PIERWSZA) --}}
+                @if($userAddresses->count() > 0)
                 <div class="form-section">
-                    <h3>👤 Dane osobowe</h3>
+                    <h3>📍 Wybierz adres dostawy</h3>
+
+                    <div class="address-selection">
+                        @foreach($userAddresses as $address)
+                            <div class="address-option">
+                                <input type="radio"
+                                       name="selected_address_id"
+                                       id="address_{{ $address->id }}"
+                                       value="{{ $address->id }}"
+                                       {{ $defaultAddress && $defaultAddress->id === $address->id ? 'checked' : '' }}>
+
+                                <label for="address_{{ $address->id }}" class="address-card">
+                                    <div class="address-header">
+                                        <strong>{{ $address->first_name }} {{ $address->last_name }}</strong>
+                                        @if($address->is_default)
+                                            <span class="address-badge">Domyślny</span>
+                                        @endif
+                                    </div>
+                                    <div class="address-details">
+                                        {{ $address->address }}<br>
+                                        {{ $address->postal_code }} {{ $address->city }}<br>
+                                        📧 {{ $address->email }} | 📞 {{ $address->phone }}
+                                    </div>
+                                </label>
+                            </div>
+                        @endforeach
+
+                        {{-- Opcja nowego adresu --}}
+                        <div class="address-option">
+                            <input type="radio" name="selected_address_id" id="new_address" value="new">
+                            <label for="new_address" class="address-card new-address">
+                                <div class="address-header">
+                                    <strong>➕ Dodaj nowy adres</strong>
+                                </div>
+                                <div class="address-details">
+                                    Użyj nowego adresu dostawy
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                {{-- 🔥 FORMULARZ DANYCH (POKAZUJ WARUNKOWO) --}}
+                <div class="form-section" id="address-form" style="{{ $userAddresses->count() > 0 ? 'display: none;' : '' }}">
+                    <h3>📍 Dane dostawy</h3>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="first_name">Imię *</label>
-                            <input type="text" name="first_name" id="first_name"
-                                   value="{{ old('first_name', $user->first_name ?? '') }}" required>
+                            <input type="text" name="first_name" id="first_name" required
+                                   value="{{ old('first_name', $defaultAddress->first_name ?? $user->first_name ?? '') }}">
                             @error('first_name')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -409,8 +559,8 @@
 
                         <div class="form-group">
                             <label for="last_name">Nazwisko *</label>
-                            <input type="text" name="last_name" id="last_name"
-                                   value="{{ old('last_name', $user->last_name ?? '') }}" required>
+                            <input type="text" name="last_name" id="last_name" required
+                                   value="{{ old('last_name', $defaultAddress->last_name ?? $user->last_name ?? '') }}">
                             @error('last_name')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -420,8 +570,8 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="email">Email *</label>
-                            <input type="email" name="email" id="email"
-                                   value="{{ old('email', $user->email ?? '') }}" required>
+                            <input type="email" name="email" id="email" required
+                                   value="{{ old('email', $defaultAddress->email ?? $user->email) }}">
                             @error('email')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -429,23 +579,19 @@
 
                         <div class="form-group">
                             <label for="phone">Telefon *</label>
-                            <input type="tel" name="phone" id="phone"
-                                   value="{{ old('phone', $defaultAddress->phone ?? '') }}" required>
+                            <input type="tel" name="phone" id="phone" required
+                                   value="{{ old('phone', $defaultAddress->phone ?? '') }}">
                             @error('phone')
                                 <span class="error">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>
-                </div>
-
-                <!-- Adres dostawy -->
-                <div class="form-section">
-                    <h3>🏠 Adres dostawy</h3>
 
                     <div class="form-group">
-                        <label for="address">Ulica i numer *</label>
-                        <input type="text" name="address" id="address"
-                               value="{{ old('address', $defaultAddress->address ?? '') }}" required>
+                        <label for="address">Adres *</label>
+                        <input type="text" name="address" id="address" required
+                               value="{{ old('address', $defaultAddress->address ?? '') }}"
+                               placeholder="ul. Przykładowa 123/45">
                         @error('address')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -453,19 +599,20 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="city">Miasto *</label>
-                            <input type="text" name="city" id="city"
-                                   value="{{ old('city', $defaultAddress->city ?? '') }}" required>
-                            @error('city')
+                            <label for="postal_code">Kod pocztowy *</label>
+                            <input type="text" name="postal_code" id="postal_code" required
+                                   value="{{ old('postal_code', $defaultAddress->postal_code ?? '') }}"
+                                   placeholder="00-000">
+                            @error('postal_code')
                                 <span class="error">{{ $message }}</span>
                             @enderror
                         </div>
 
                         <div class="form-group">
-                            <label for="postal_code">Kod pocztowy *</label>
-                            <input type="text" name="postal_code" id="postal_code"
-                                   value="{{ old('postal_code', $defaultAddress->postal_code ?? '') }}" required>
-                            @error('postal_code')
+                            <label for="city">Miasto *</label>
+                            <input type="text" name="city" id="city" required
+                                   value="{{ old('city', $defaultAddress->city ?? '') }}">
+                            @error('city')
                                 <span class="error">{{ $message }}</span>
                             @enderror
                         </div>
@@ -483,9 +630,19 @@
                             <span class="error">{{ $message }}</span>
                         @enderror
                     </div>
+
+                    {{-- 🔥 OPCJA ZAPISU JAKO DOMYŚLNY --}}
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="save_as_default" value="1"
+                                   {{ old('save_as_default') ? 'checked' : '' }}>
+                            <span class="checkmark"></span>
+                            Zapisz jako domyślny adres
+                        </label>
+                    </div>
                 </div>
 
-                <!-- Metoda płatności -->
+                {{-- METODA PŁATNOŚCI --}}
                 <div class="form-section">
                     <h3>💳 Metoda płatności</h3>
 
@@ -519,7 +676,7 @@
                         <span class="error">{{ $message }}</span>
                     @enderror
 
-                    <!-- Formularz karty -->
+                    {{-- Formularz karty --}}
                     <div class="payment-details" id="card-details" style="display: none;">
                         <h4>💳 Dane karty płatniczej</h4>
 
@@ -561,7 +718,7 @@
                         </div>
                     </div>
 
-                    <!-- Formularz BLIK -->
+                    {{-- Formularz BLIK --}}
                     <div class="payment-details" id="blik-details" style="display: none;">
                         <h4>📱 Płatność BLIK</h4>
 
@@ -587,7 +744,7 @@
                     </div>
                 </div>
 
-                <!-- Przyciski -->
+                {{-- Przyciski --}}
                 <div class="form-actions">
                     <a href="{{ route('cart.index') }}" class="btn btn-secondary">← Powrót do koszyka</a>
                     <button type="submit" class="btn btn-primary" id="submitButton">
@@ -597,36 +754,35 @@
             </form>
         </div>
 
-        <!-- Podsumowanie zamówienia -->
+        {{-- PRAWA KOLUMNA - PODSUMOWANIE ZAMÓWIENIA --}}
         <div class="order-summary">
             <h3>📋 Podsumowanie zamówienia</h3>
 
-            <!-- Produkty z koszyka -->
+            {{-- Produkty z koszyka --}}
             @foreach($cartItems as $item)
-    <div class="summary-item">
-        @if($item->product && $item->product->primary_image_url)
-            <img src="{{ $item->product->primary_image_url }}"
-                 alt="{{ $item->product->name }}"
-                 class="summary-image">
-        @else
-            <div class="summary-image-placeholder">📦</div>
-        @endif
+                <div class="summary-item">
+                    @if($item->product && $item->product->primary_image_url)
+                        <img src="{{ $item->product->primary_image_url }}"
+                             alt="{{ $item->product->name }}"
+                             class="summary-image">
+                    @else
+                        <div class="summary-image-placeholder">📦</div>
+                    @endif
 
-        <div class="summary-details">
-            <div class="summary-name">
-                {{ $item->product ? $item->product->name : 'Produkt usunięty' }}
-            </div>
-            <div class="summary-quantity">Ilość: {{ $item->quantity }} szt.</div>
-        </div>
+                    <div class="summary-details">
+                        <div class="summary-name">
+                            {{ $item->product ? $item->product->name : 'Produkt usunięty' }}
+                        </div>
+                        <div class="summary-quantity">Ilość: {{ $item->quantity }} szt.</div>
+                    </div>
 
-        <div class="summary-price">
-            {{-- 🔥 POPRAWKA - użyj nowej właściwości line_total --}}
-            {{ number_format($item->line_total ?? 0, 2, ',', ' ') }} zł
-        </div>
-    </div>
-@endforeach
+                    <div class="summary-price">
+                        {{ number_format($item->line_total ?? 0, 2, ',', ' ') }} zł
+                    </div>
+                </div>
+            @endforeach
 
-            <!-- Podsumowanie finansowe -->
+            {{-- Podsumowanie finansowe --}}
             <div class="summary-total">
                 <div class="summary-row">
                     <span>Wartość produktów ({{ $cartItems->count() }} szt.):</span>
@@ -644,7 +800,7 @@
                 </div>
             </div>
 
-            <!-- Informacja o bezpieczeństwie -->
+            {{-- Informacja o bezpieczeństwie --}}
             <div class="security-notice">
                 <h4>🔒 Bezpieczne zamówienie</h4>
                 <p>Twoje dane są chronione szyfrowaniem SSL. Gwarantujemy bezpieczeństwo Twoich danych osobowych.</p>
@@ -766,6 +922,48 @@ document.addEventListener('DOMContentLoaded', function() {
         submitButton.disabled = true;
         submitButton.innerHTML = '⏳ Przetwarzanie...';
     });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addressOptions = document.querySelectorAll('input[name="selected_address_id"]');
+    const addressForm = document.getElementById('address-form');
+
+    // Obsługa wyboru adresu
+    addressOptions.forEach(option => {
+        option.addEventListener('change', function() {
+            if (this.value === 'new') {
+                // Pokaż formularz nowego adresu
+                addressForm.style.display = 'block';
+                // Wyczyść pola
+                addressForm.querySelectorAll('input').forEach(input => {
+                    if (input.type !== 'checkbox') {
+                        input.value = '';
+                    }
+                });
+            } else {
+                // Ukryj formularz i wypełnij danymi wybranego adresu
+                addressForm.style.display = 'none';
+                fillAddressForm(this.value);
+            }
+        });
+    });
+
+    function fillAddressForm(addressId) {
+        // Znajdź dane adresu i wypełnij formularz
+        const addresses = @json($userAddresses);
+        const selectedAddress = addresses.find(addr => addr.id == addressId);
+
+        if (selectedAddress) {
+            document.getElementById('first_name').value = selectedAddress.first_name;
+            document.getElementById('last_name').value = selectedAddress.last_name;
+            document.getElementById('email').value = selectedAddress.email;
+            document.getElementById('phone').value = selectedAddress.phone;
+            document.getElementById('address').value = selectedAddress.address;
+            document.getElementById('postal_code').value = selectedAddress.postal_code;
+            document.getElementById('city').value = selectedAddress.city;
+            document.getElementById('country').value = selectedAddress.country;
+        }
+    }
 });
 </script>
 @endsection

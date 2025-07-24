@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\Product;
-use App\Models\Cart;
-use App\Models\UserAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\UserAddress;
 
 class CheckoutController extends Controller
 {
     /**
-     * Strona checkout - finalizacja zamówienia z koszyka
+     * Strona finalizacji zamówienia z koszyka
      */
     public function index()
     {
@@ -23,26 +24,54 @@ class CheckoutController extends Controller
             return redirect()->route('home')->with('error', 'Koszyk jest pusty!');
         }
 
-        // 🔥 POPRAWKA - Oblicz cenę na podstawie aktualnej ceny produktu
+        // Oblicz cenę
         $cartTotal = 0;
         foreach ($cartItems as $item) {
             if ($item->product) {
-                // Dodaj aktualną cenę do obiektu cart item
                 $item->current_price = $item->product->price;
                 $item->line_total = $item->product->price * $item->quantity;
                 $cartTotal += $item->line_total;
             } else {
-                // Jeśli produkt został usunięty
                 $item->current_price = 0;
                 $item->line_total = 0;
             }
         }
 
         $user = Auth::user();
-        $defaultAddress = $user->default_address;
-        $lastOrder = $user->last_order;
 
-        return view('checkout.index', compact('cartItems', 'cartTotal', 'user', 'defaultAddress', 'lastOrder'));
+        // 🔥 BEZPIECZNE POBIERANIE ADRESÓW
+        $userAddresses = collect();
+        $defaultAddress = null;
+        $lastOrder = null;
+
+        try {
+            // Sprawdź czy tabela user_addresses istnieje
+            if (Schema::hasTable('user_addresses')) {
+                $userAddresses = $user->addresses()->orderBy('is_default', 'desc')->get();
+                $defaultAddress = $userAddresses->where('is_default', true)->first()
+                                  ?? $userAddresses->first();
+            }
+
+            // Pobierz ostatnie zamówienie
+            if (Schema::hasTable('orders')) {
+                $lastOrder = $user->orders()->with('address')->first();
+            }
+
+        } catch (\Exception $e) {
+            \Log::warning('Błąd pobierania adresów użytkownika: ' . $e->getMessage());
+            $userAddresses = collect();
+            $defaultAddress = null;
+            $lastOrder = null;
+        }
+
+        return view('checkout.index', compact(
+            'cartItems',
+            'cartTotal',
+            'user',
+            'userAddresses',
+            'defaultAddress',
+            'lastOrder'
+        ));
     }
 
     /**
@@ -66,10 +95,41 @@ class CheckoutController extends Controller
 
             $cartTotal = $product->price * $quantity;
             $user = Auth::user();
-            $defaultAddress = $user->default_address;
-            $lastOrder = $user->last_order;
 
-            return view('checkout.buy-now', compact('product', 'quantity', 'cartTotal', 'user', 'defaultAddress', 'lastOrder'));
+            // 🔥 BEZPIECZNE POBIERANIE ADRESÓW
+            $userAddresses = collect();
+            $defaultAddress = null;
+            $lastOrder = null;
+
+            try {
+                // Sprawdź czy tabela user_addresses istnieje
+                if (Schema::hasTable('user_addresses')) {
+                    $userAddresses = $user->addresses()->orderBy('is_default', 'desc')->get();
+                    $defaultAddress = $userAddresses->where('is_default', true)->first()
+                                      ?? $userAddresses->first();
+                }
+
+                // Pobierz ostatnie zamówienie
+                if (Schema::hasTable('orders')) {
+                    $lastOrder = $user->orders()->with('address')->first();
+                }
+
+            } catch (\Exception $e) {
+                \Log::warning('Błąd pobierania adresów użytkownika w Buy Now: ' . $e->getMessage());
+                $userAddresses = collect();
+                $defaultAddress = null;
+                $lastOrder = null;
+            }
+
+            return view('checkout.buy-now', compact(
+                'product',
+                'quantity',
+                'cartTotal',
+                'user',
+                'userAddresses',
+                'defaultAddress',
+                'lastOrder'
+            ));
 
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -77,48 +137,103 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Przetwórz zamówienie z koszyka
+     * Przetwórz zamówienie z koszyka - NOWA WERSJA Z ADRESAMI
      */
     public function processOrder(Request $request)
     {
         try {
-            $request->validate([
-                'first_name' => 'required|string|max:255',
-                'last_name' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-                'phone' => 'required|string|max:20',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:100',
-                'postal_code' => 'required|string|max:10',
-                'country' => 'string|max:100',
+            // 🔥 WALIDACJA Z OBSŁUGĄ ADRESÓW
+            $rules = [
                 'payment_method' => 'required|in:transfer,card,blik,paypal,cash_on_delivery'
-            ]);
+            ];
 
-            // Walidacja dodatkowych pól dla płatności
+            // Jeśli wybrano istniejący adres
+            if ($request->selected_address_id && $request->selected_address_id !== 'new') {
+                $rules['selected_address_id'] = 'required|exists:user_addresses,id';
+            } else {
+                // Jeśli nowy adres - ZAWSZE wymagane pola
+                $rules = array_merge($rules, [
+                    'first_name' => 'required|string|max:255',
+                    'last_name' => 'required|string|max:255',
+                    'email' => 'required|email|max:255',
+                    'phone' => 'required|string|max:20',
+                    'address' => 'required|string|max:255',
+                    'city' => 'required|string|max:100',
+                    'postal_code' => 'required|string|max:10',
+                    'country' => 'string|max:100'
+                ]);
+            }
+
+            // Walidacja płatności
             if ($request->payment_method === 'card') {
-                $request->validate([
+                $rules = array_merge($rules, [
                     'card_number' => 'required|string|min:13|max:19',
                     'expiry_date' => 'required|string|size:5',
                     'cvv' => 'required|string|min:3|max:4',
                     'card_holder' => 'required|string|min:2'
                 ]);
             } elseif ($request->payment_method === 'blik') {
-                $request->validate([
-                    'blik_code' => 'required|string|size:6'
-                ]);
+                $rules['blik_code'] = 'required|string|size:6';
             }
+
+            $request->validate($rules);
 
             \Log::info('🔥 processOrder rozpoczęte', [
                 'user_id' => Auth::id(),
-                'payment_method' => $request->payment_method
+                'payment_method' => $request->payment_method,
+                'selected_address_id' => $request->selected_address_id
             ]);
 
             DB::beginTransaction();
 
-            $order = Order::createFromCart(Auth::id(), $request->only([
-                'first_name', 'last_name', 'email', 'phone',
-                'address', 'city', 'postal_code', 'country'
-            ]), $request->payment_method);
+            // 🔥 OBSŁUGA ADRESU
+            if ($request->selected_address_id && $request->selected_address_id !== 'new') {
+                // Użyj istniejącego adresu
+                $addressId = $request->selected_address_id;
+
+                // Sprawdź czy adres należy do użytkownika
+                $existingAddress = Auth::user()->addresses()->find($addressId);
+                if (!$existingAddress) {
+                    throw new \Exception('Wybrany adres nie istnieje.');
+                }
+            } else {
+                // Utwórz nowy adres
+                $address = Auth::user()->addresses()->create([
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                    'address' => $request->address,
+                    'city' => $request->city,
+                    'postal_code' => $request->postal_code,
+                    'country' => $request->country ?? 'Polska',
+                    'is_default' => $request->save_as_default ? true : false
+                ]);
+                $addressId = $address->id;
+            }
+
+            // 🔥 PRZYGOTUJ DANE PŁATNOŚCI
+            $paymentData = null;
+            if ($request->payment_method === 'card') {
+                $paymentData = [
+                    'method' => 'card',
+                    'card_last_four' => substr($request->card_number, -4),
+                    'card_holder' => $request->card_holder,
+                    'expiry_date' => $request->expiry_date,
+                    'processed_at' => now()->toISOString(),
+                    'status' => 'processed'
+                ];
+            } elseif ($request->payment_method === 'blik') {
+                $paymentData = [
+                    'method' => 'blik',
+                    'blik_code' => $request->blik_code,
+                    'processed_at' => now()->toISOString(),
+                    'status' => 'processed'
+                ];
+            }
+
+            // 🔥 UŻYJ METODY Z ADRESEM (nie starej createFromCart)
+            $order = $this->createOrderFromCart(Auth::id(), $addressId, $request->payment_method, $paymentData);
 
             DB::commit();
 
@@ -137,63 +252,121 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Przetwórz zamówienie Buy Now
+     * Przetwórz zamówienie Buy Now - NOWA WERSJA Z ADRESAMI
      */
     public function processBuyNow(Request $request)
     {
         try {
-            $request->validate([
+            // 🔥 BAZOWA WALIDACJA
+            $rules = [
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1|max:100',
-                'first_name' => 'required|string|max:255',
-                'last_name' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-                'phone' => 'required|string|max:20',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:100',
-                'postal_code' => 'required|string|max:10',
-                'country' => 'string|max:100',
                 'payment_method' => 'required|in:transfer,card,blik,paypal,cash_on_delivery'
-            ]);
+            ];
 
-            // Walidacja dodatkowych pól dla płatności
+            // 🔥 WALIDACJA WARUNKOWA - ADRES
+            if ($request->selected_address_id && $request->selected_address_id !== 'new') {
+                // Jeśli wybrano istniejący adres
+                $rules['selected_address_id'] = 'required|exists:user_addresses,id';
+            } else {
+                // Jeśli nowy adres - ZAWSZE wymagane pola
+                $rules = array_merge($rules, [
+                    'first_name' => 'required|string|max:255',
+                    'last_name' => 'required|string|max:255',
+                    'email' => 'required|email|max:255',
+                    'phone' => 'required|string|max:20',
+                    'address' => 'required|string|max:255',
+                    'city' => 'required|string|max:100',
+                    'postal_code' => 'required|string|max:10',
+                    'country' => 'string|max:100'
+                ]);
+            }
+
+            // 🔥 WALIDACJA PŁATNOŚCI
             if ($request->payment_method === 'card') {
-                $request->validate([
+                $rules = array_merge($rules, [
                     'card_number' => 'required|string|min:13|max:19',
                     'expiry_date' => 'required|string|size:5',
                     'cvv' => 'required|string|min:3|max:4',
                     'card_holder' => 'required|string|min:2'
                 ]);
             } elseif ($request->payment_method === 'blik') {
-                $request->validate([
-                    'blik_code' => 'required|string|size:6'
-                ]);
+                $rules['blik_code'] = 'required|string|size:6';
             }
+
+            $request->validate($rules);
 
             \Log::info('🔥 processBuyNow rozpoczęte', [
                 'user_id' => Auth::id(),
                 'product_id' => $request->product_id,
-                'payment_method' => $request->payment_method
+                'payment_method' => $request->payment_method,
+                'selected_address_id' => $request->selected_address_id
             ]);
 
             DB::beginTransaction();
 
-            $order = Order::createFromBuyNow(
+            // 🔥 OBSŁUGA ADRESU
+            if ($request->selected_address_id && $request->selected_address_id !== 'new') {
+                // Użyj istniejącego adresu
+                $addressId = $request->selected_address_id;
+
+                // Sprawdź czy adres należy do użytkownika
+                $existingAddress = Auth::user()->addresses()->find($addressId);
+                if (!$existingAddress) {
+                    throw new \Exception('Wybrany adres nie istnieje.');
+                }
+            } else {
+                // Utwórz nowy adres
+                $address = Auth::user()->addresses()->create([
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                    'address' => $request->address,
+                    'city' => $request->city,
+                    'postal_code' => $request->postal_code,
+                    'country' => $request->country ?? 'Polska',
+                    'is_default' => $request->save_as_default ? true : false
+                ]);
+                $addressId = $address->id;
+            }
+
+            // 🔥 PRZYGOTUJ DANE PŁATNOŚCI
+            $paymentData = null;
+            if ($request->payment_method === 'card') {
+                $paymentData = [
+                    'method' => 'card',
+                    'card_last_four' => substr($request->card_number, -4),
+                    'card_holder' => $request->card_holder,
+                    'expiry_date' => $request->expiry_date,
+                    'processed_at' => now()->toISOString(),
+                    'status' => 'processed'
+                ];
+            } elseif ($request->payment_method === 'blik') {
+                $paymentData = [
+                    'method' => 'blik',
+                    'blik_code' => $request->blik_code,
+                    'processed_at' => now()->toISOString(),
+                    'status' => 'processed'
+                ];
+            }
+
+            // 🔥 UŻYJ METODY Z ADRESEM (nie starej createFromBuyNow)
+            $order = $this->createOrderFromBuyNow(
                 Auth::id(),
                 $request->product_id,
                 $request->quantity,
-                $request->only([
-                    'first_name', 'last_name', 'email', 'phone',
-                    'address', 'city', 'postal_code', 'country'
-                ]),
-                $request->payment_method
+                $addressId,
+                $request->payment_method,
+                $paymentData
             );
 
             DB::commit();
 
             \Log::info('🔥 processBuyNow zakończone pomyślnie', [
                 'order_id' => $order->id,
-                'order_number' => $order->order_number
+                'order_number' => $order->order_number,
+                'address_id' => $addressId
             ]);
 
             return $this->handlePaymentAndRedirect($order, $request);
@@ -202,6 +375,116 @@ class CheckoutController extends Controller
             DB::rollBack();
             \Log::error('🔥 Błąd processBuyNow: ' . $e->getMessage());
             return back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * 🔥 NOWA METODA - Tworzenie zamówienia z koszyka z adresem
+     */
+    private function createOrderFromCart($userId, $addressId, $paymentMethod, $paymentData = null)
+    {
+        try {
+            // Pobierz elementy koszyka
+            $cartItems = Cart::getUserCartItems($userId);
+
+            if ($cartItems->isEmpty()) {
+                throw new \Exception('Koszyk jest pusty');
+            }
+
+            // Oblicz całkowitą kwotę
+            $totalAmount = 0;
+            foreach ($cartItems as $item) {
+                if ($item->product && $item->product->stock_quantity >= $item->quantity) {
+                    $totalAmount += $item->product->price * $item->quantity;
+                } else {
+                    throw new \Exception("Niewystarczająca ilość produktu: {$item->product->name}");
+                }
+            }
+
+            // Wygeneruj numer zamówienia
+            $orderNumber = 'ORD-' . strtoupper(uniqid());
+
+            // Utwórz zamówienie
+            $order = Order::create([
+                'order_number' => $orderNumber,
+                'user_id' => $userId,
+                'address_id' => $addressId,
+                'total_amount' => $totalAmount,
+                'payment_method' => $paymentMethod,
+                'payment_data' => $paymentData ? json_encode($paymentData) : null,
+                'status' => 'pending',
+                'payment_status' => 'pending'
+            ]);
+
+            // Dodaj elementy zamówienia
+            foreach ($cartItems as $item) {
+                $order->items()->create([
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->product->price
+                ]);
+
+                // Zmniejsz stan magazynowy
+                $item->product->decrement('stock_quantity', $item->quantity);
+            }
+
+            // Wyczyść koszyk
+            Cart::where('user_id', $userId)->delete();
+
+            return $order;
+
+        } catch (\Exception $e) {
+            \Log::error('🔥 Błąd createOrderFromCart: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * 🔥 NOWA METODA - Tworzenie zamówienia Buy Now z adresem
+     */
+    private function createOrderFromBuyNow($userId, $productId, $quantity, $addressId, $paymentMethod, $paymentData = null)
+    {
+        try {
+            $product = Product::findOrFail($productId);
+
+            // Sprawdź dostępność
+            if ($product->stock_quantity < $quantity) {
+                throw new \Exception("Niewystarczająca ilość produktu {$product->name}. Dostępne: {$product->stock_quantity} szt.");
+            }
+
+            // Oblicz całkowitą kwotę
+            $totalAmount = $product->price * $quantity;
+
+            // Wygeneruj numer zamówienia
+            $orderNumber = 'ORD-' . strtoupper(uniqid());
+
+            // Utwórz zamówienie
+            $order = Order::create([
+                'order_number' => $orderNumber,
+                'user_id' => $userId,
+                'address_id' => $addressId,
+                'total_amount' => $totalAmount,
+                'payment_method' => $paymentMethod,
+                'payment_data' => $paymentData ? json_encode($paymentData) : null,
+                'status' => 'pending',
+                'payment_status' => 'pending'
+            ]);
+
+            // Dodaj element zamówienia
+            $order->items()->create([
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+                'price' => $product->price
+            ]);
+
+            // Zmniejsz stan magazynowy
+            $product->decrement('stock_quantity', $quantity);
+
+            return $order;
+
+        } catch (\Exception $e) {
+            \Log::error('🔥 Błąd createOrderFromBuyNow: ' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -286,9 +569,7 @@ class CheckoutController extends Controller
         }
     }
 
-    /**
-     * Historia zamówień użytkownika
-     */
+    // ... reszta metod (orders, orderDetails, cancelOrder, etc.) pozostaje bez zmian
     public function orders(Request $request)
     {
         try {
@@ -347,9 +628,6 @@ class CheckoutController extends Controller
         }
     }
 
-    /**
-     * Szczegóły zamówienia
-     */
     public function orderDetails(Order $order)
     {
         try {
@@ -368,9 +646,6 @@ class CheckoutController extends Controller
         }
     }
 
-    /**
-     * Anuluj zamówienie
-     */
     public function cancelOrder(Order $order)
     {
         try {
@@ -409,9 +684,6 @@ class CheckoutController extends Controller
         }
     }
 
-    /**
-     * Powrót z PayPal
-     */
     public function paypalReturn($orderNumber)
     {
         $order = Order::where('order_number', $orderNumber)
@@ -428,9 +700,6 @@ class CheckoutController extends Controller
                        ->with('success', "✅ Płatność PayPal zakończona pomyślnie!");
     }
 
-    /**
-     * Powrót z Przelewy24
-     */
     public function transferReturn($orderNumber)
     {
         $order = Order::where('order_number', $orderNumber)
@@ -447,9 +716,6 @@ class CheckoutController extends Controller
                        ->with('success', "✅ Przelew zakończony pomyślnie!");
     }
 
-    /**
-     * Śledzenie zamówienia
-     */
     public function trackOrder($orderNumber)
     {
         $order = Order::where('order_number', $orderNumber)

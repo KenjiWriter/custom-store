@@ -6,26 +6,31 @@ use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
+    /**
+     * Wyświetl stronę kontakt
+     */
     public function index()
     {
         return view('contact');
     }
 
-    public function submit(Request $request)
+    /**
+     * Przetwórz formularz kontaktowy
+     */
+    public function send(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
             'subject' => 'required|string|max:255',
-            'message' => 'required|string|max:2000',
+            'message' => 'required|string|min:10|max:2000'
         ]);
 
-        try {
-            // Tutaj możesz dodać logikę wysyłania emaila
+        // Tutaj możesz dodać logikę wysyłania emaila
+        // np. Mail::send() lub zapisanie do bazy danych
 
-            return back()->with('success', 'Dziękujemy za wiadomość! Odpowiemy najszybciej jak to możliwe.');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Wystąpił błąd podczas wysyłania wiadomości. Spróbuj ponownie.');
-        }
+        return back()->with('success', 'Dziękujemy za wiadomość! Odpowiemy w ciągu 24 godzin.');
     }
 }

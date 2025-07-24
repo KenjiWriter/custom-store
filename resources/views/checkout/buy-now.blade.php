@@ -232,6 +232,97 @@
     box-shadow: 0 8px 30px rgba(var(--accent-primary-rgb), 0.4);
 }
 
+.address-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.address-option {
+    position: relative;
+}
+
+.address-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.address-card {
+    display: block;
+    padding: 1.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.address-card:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-card);
+}
+
+.address-option input[type="radio"]:checked + .address-card {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(118, 75, 162, 0.05) 0%, transparent 100%);
+    box-shadow: 0 4px 15px var(--glow-color);
+}
+
+.address-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.address-badge {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.2rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.address-details {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.new-address {
+    border-style: dashed;
+    text-align: center;
+}
+
+.new-address .address-header {
+    justify-content: center;
+    color: var(--accent-primary);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.checkbox-label:hover {
+    background: var(--bg-card);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent-primary);
+}
+
 /* Order Summary Sidebar */
 .order-summary {
     background: var(--bg-secondary);
@@ -398,15 +489,61 @@
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
                 <input type="hidden" name="quantity" value="{{ $quantity }}">
 
-                <!-- Dane osobowe -->
+                {{-- 🔥 SEKCJA WYBORU ADRESU (NOWA!) --}}
+                @if($userAddresses->count() > 0)
                 <div class="form-section">
+                    <h3>📍 Wybierz adres dostawy</h3>
+
+                    <div class="address-selection">
+                        @foreach($userAddresses as $address)
+                            <div class="address-option">
+                                <input type="radio"
+                                       name="selected_address_id"
+                                       id="address_{{ $address->id }}"
+                                       value="{{ $address->id }}"
+                                       {{ $defaultAddress && $defaultAddress->id === $address->id ? 'checked' : '' }}>
+
+                                <label for="address_{{ $address->id }}" class="address-card">
+                                    <div class="address-header">
+                                        <strong>{{ $address->first_name }} {{ $address->last_name }}</strong>
+                                        @if($address->is_default)
+                                            <span class="address-badge">Domyślny</span>
+                                        @endif
+                                    </div>
+                                    <div class="address-details">
+                                        {{ $address->address }}<br>
+                                        {{ $address->postal_code }} {{ $address->city }}<br>
+                                        📧 {{ $address->email }} | 📞 {{ $address->phone }}
+                                    </div>
+                                </label>
+                            </div>
+                        @endforeach
+
+                        {{-- Opcja nowego adresu --}}
+                        <div class="address-option">
+                            <input type="radio" name="selected_address_id" id="new_address" value="new">
+                            <label for="new_address" class="address-card new-address">
+                                <div class="address-header">
+                                    <strong>➕ Dodaj nowy adres</strong>
+                                </div>
+                                <div class="address-details">
+                                    Użyj nowego adresu dostawy
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                {{-- 🔥 FORMULARZ DANYCH (POKAZUJ WARUNKOWO) --}}
+                <div class="form-section" id="address-form" style="{{ $userAddresses->count() > 0 ? 'display: none;' : '' }}">
                     <h3>👤 Dane osobowe</h3>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="first_name">Imię *</label>
                             <input type="text" name="first_name" id="first_name"
-                                   value="{{ old('first_name', $user->first_name ?? '') }}" required>
+                                   value="{{ old('first_name', $defaultAddress->first_name ?? $user->first_name ?? '') }}" required>
                             @error('first_name')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -415,7 +552,7 @@
                         <div class="form-group">
                             <label for="last_name">Nazwisko *</label>
                             <input type="text" name="last_name" id="last_name"
-                                   value="{{ old('last_name', $user->last_name ?? '') }}" required>
+                                   value="{{ old('last_name', $defaultAddress->last_name ?? $user->last_name ?? '') }}" required>
                             @error('last_name')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -426,7 +563,7 @@
                         <div class="form-group">
                             <label for="email">Email *</label>
                             <input type="email" name="email" id="email"
-                                   value="{{ old('email', $user->email ?? '') }}" required>
+                                   value="{{ old('email', $defaultAddress->email ?? $user->email ?? '') }}" required>
                             @error('email')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -435,22 +572,19 @@
                         <div class="form-group">
                             <label for="phone">Telefon *</label>
                             <input type="tel" name="phone" id="phone"
-                                   value="{{ old('phone', $lastOrder->phone ?? '') }}" required>
+                                   value="{{ old('phone', $defaultAddress->phone ?? '') }}" required>
                             @error('phone')
                                 <span class="error">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>
-                </div>
 
-                <!-- Adres dostawy -->
-                <div class="form-section">
                     <h3>🏠 Adres dostawy</h3>
 
                     <div class="form-group">
                         <label for="address">Ulica i numer *</label>
                         <input type="text" name="address" id="address"
-                               value="{{ old('address', $lastOrder->address ?? '') }}" required>
+                               value="{{ old('address', $defaultAddress->address ?? '') }}" required>
                         @error('address')
                             <span class="error">{{ $message }}</span>
                         @enderror
@@ -460,7 +594,7 @@
                         <div class="form-group">
                             <label for="city">Miasto *</label>
                             <input type="text" name="city" id="city"
-                                   value="{{ old('city', $lastOrder->city ?? '') }}" required>
+                                   value="{{ old('city', $defaultAddress->city ?? '') }}" required>
                             @error('city')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -469,7 +603,7 @@
                         <div class="form-group">
                             <label for="postal_code">Kod pocztowy *</label>
                             <input type="text" name="postal_code" id="postal_code"
-                                   value="{{ old('postal_code', $lastOrder->postal_code ?? '') }}" required>
+                                   value="{{ old('postal_code', $defaultAddress->postal_code ?? '') }}" required>
                             @error('postal_code')
                                 <span class="error">{{ $message }}</span>
                             @enderror
@@ -478,11 +612,25 @@
 
                     <div class="form-group">
                         <label for="country">Kraj</label>
-                        <input type="text" name="country" id="country"
-                               value="{{ old('country', $lastOrder->country ?? 'Polska') }}">
+                        <select name="country" id="country">
+                            <option value="Polska" {{ old('country', $defaultAddress->country ?? 'Polska') == 'Polska' ? 'selected' : '' }}>Polska</option>
+                            <option value="Czechy" {{ old('country') == 'Czechy' ? 'selected' : '' }}>Czechy</option>
+                            <option value="Słowacja" {{ old('country') == 'Słowacja' ? 'selected' : '' }}>Słowacja</option>
+                            <option value="Niemcy" {{ old('country') == 'Niemcy' ? 'selected' : '' }}>Niemcy</option>
+                        </select>
                         @error('country')
                             <span class="error">{{ $message }}</span>
                         @enderror
+                    </div>
+
+                    {{-- 🔥 OPCJA ZAPISU JAKO DOMYŚLNY --}}
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="save_as_default" value="1"
+                                   {{ old('save_as_default') ? 'checked' : '' }}>
+                            <span class="checkmark"></span>
+                            Zapisz jako domyślny adres
+                        </label>
                     </div>
                 </div>
 
@@ -704,6 +852,64 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicjalna aktualizacja
     updatePaymentForm();
 
+    // 🔥 DODAJ OBSŁUGĘ WYBORU ADRESU (NAJWAŻNIEJSZE!)
+    const addressOptions = document.querySelectorAll('input[name="selected_address_id"]');
+    const addressForm = document.getElementById('address-form');
+
+    // Obsługa wyboru adresu
+    addressOptions.forEach(option => {
+        option.addEventListener('change', function() {
+            if (this.value === 'new') {
+                // Pokaż formularz nowego adresu
+                if (addressForm) {
+                    addressForm.style.display = 'block';
+                    // Wyczyść pola
+                    addressForm.querySelectorAll('input:not([type="checkbox"])').forEach(input => {
+                        input.value = '';
+                    });
+                    // Odznacz checkbox
+                    const saveDefault = addressForm.querySelector('input[name="save_as_default"]');
+                    if (saveDefault) saveDefault.checked = false;
+                }
+            } else {
+                // Ukryj formularz i wypełnij danymi wybranego adresu
+                if (addressForm) {
+                    addressForm.style.display = 'none';
+                }
+                fillAddressForm(this.value);
+            }
+        });
+    });
+
+    function fillAddressForm(addressId) {
+        // 🔥 KLUCZOWA FUNKCJA - WYPEŁNIANIE DANYCH Z WYBRANEGO ADRESU
+        const addresses = @json($userAddresses ?? collect());
+        const selectedAddress = addresses.find(addr => addr.id == addressId);
+
+        if (selectedAddress) {
+            console.log('🔥 Wypełniam danymi adresu:', selectedAddress);
+
+            const fields = {
+                'first_name': selectedAddress.first_name,
+                'last_name': selectedAddress.last_name,
+                'email': selectedAddress.email,
+                'phone': selectedAddress.phone,
+                'address': selectedAddress.address,
+                'postal_code': selectedAddress.postal_code,
+                'city': selectedAddress.city,
+                'country': selectedAddress.country
+            };
+
+            Object.entries(fields).forEach(([fieldName, value]) => {
+                const field = document.getElementById(fieldName);
+                if (field && value) {
+                    field.value = value;
+                    console.log(`🔥 Ustawiam ${fieldName}: ${value}`);
+                }
+            });
+        }
+    }
+
     // Formatowanie numeru karty
     const cardNumberInput = document.getElementById('card_number');
     if (cardNumberInput) {
@@ -741,6 +947,80 @@ document.addEventListener('DOMContentLoaded', function() {
         blikInput.addEventListener('input', function(e) {
             e.target.value = e.target.value.replace(/\D/g, '');
         });
+    }
+
+    // Formatowanie kodu pocztowego
+    const postalCode = document.getElementById('postal_code');
+    if (postalCode) {
+        postalCode.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '-' + value.substring(2, 5);
+            }
+            e.target.value = value;
+        });
+    }
+
+    // Obsługa formularza
+    const checkoutForm = document.querySelector('form');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', function(e) {
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '⏳ Przetwarzanie...';
+            }
+        });
+    }
+});
+
+// 🔥 OBSŁUGA WYBORU ADRESU (SKOPIOWANE Z index.blade.php)
+    const addressOptions = document.querySelectorAll('input[name="selected_address_id"]');
+    const addressForm = document.getElementById('address-form');
+
+    // Obsługa wyboru adresu
+    addressOptions.forEach(option => {
+        option.addEventListener('change', function() {
+            if (this.value === 'new') {
+                // Pokaż formularz nowego adresu
+                addressForm.style.display = 'block';
+                // Wyczyść pola
+                addressForm.querySelectorAll('input').forEach(input => {
+                    if (input.type !== 'checkbox') {
+                        input.value = '';
+                    }
+                });
+            } else {
+                // Ukryj formularz i wypełnij danymi wybranego adresu
+                addressForm.style.display = 'none';
+                fillAddressForm(this.value);
+            }
+        });
+    });
+
+    function fillAddressForm(addressId) {
+        // Znajdź dane adresu i wypełnij formularz
+        const addresses = @json($userAddresses);
+        const selectedAddress = addresses.find(addr => addr.id == addressId);
+
+        if (selectedAddress) {
+            const firstNameInput = document.getElementById('first_name');
+            const lastNameInput = document.getElementById('last_name');
+            const emailInput = document.getElementById('email');
+            const phoneInput = document.getElementById('phone');
+            const addressInput = document.getElementById('address');
+            const postalCodeInput = document.getElementById('postal_code');
+            const cityInput = document.getElementById('city');
+            const countrySelect = document.getElementById('country');
+
+            if (firstNameInput) firstNameInput.value = selectedAddress.first_name;
+            if (lastNameInput) lastNameInput.value = selectedAddress.last_name;
+            if (emailInput) emailInput.value = selectedAddress.email;
+            if (phoneInput) phoneInput.value = selectedAddress.phone;
+            if (addressInput) addressInput.value = selectedAddress.address;
+            if (postalCodeInput) postalCodeInput.value = selectedAddress.postal_code;
+            if (cityInput) cityInput.value = selectedAddress.city;
+            if (countrySelect) countrySelect.value = selectedAddress.country;
+        }
     }
 });
 </script>

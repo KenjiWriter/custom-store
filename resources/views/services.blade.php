@@ -172,27 +172,27 @@
 <style>
 /* Services Page Styles */
 .services-hero {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+     background: var(--bg-card);
+    border: 2px solid var(--border-color);
     border-radius: 24px;
     padding: 4rem 2rem;
     text-align: center;
-    color: white;
-    margin-bottom: 4rem;
+    margin-bottom: 3rem;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 15px 50px var(--shadow-color);
 }
 
 .services-hero::before {
-    content: '';
+   content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     background:
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-    pointer-events: none;
+        radial-gradient(circle at 25% 25%, var(--glow-color) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
 }
 
 .hero-content h1 {

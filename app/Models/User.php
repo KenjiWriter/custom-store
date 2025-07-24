@@ -46,7 +46,7 @@ class User extends Authenticatable
     // RELACJA DO ADRESÓW
     public function addresses()
     {
-        return $this->hasMany(UserAddress::class)->orderBy('is_default', 'desc');
+        return $this->hasMany(UserAddress::class);
     }
 
     public function defaultAddress()
@@ -100,12 +100,12 @@ class User extends Authenticatable
 
     public function getLastOrderAttribute()
     {
-        return $this->orders()->first();
+        return $this->orders()->latest()->first();
     }
 
     public function getDefaultAddressAttribute()
     {
-        return $this->addresses()->where('is_default', true)->first();
+        return $this->orders()->latest()->first();
     }
 
     // METODY KOSZYKA
